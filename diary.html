@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的日记</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "Microsoft YaHei", sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  padding: 20px;
+}
+.container { max-width: 640px; margin: 0 auto; }
+
+.nav-top { text-align: center; margin-bottom: 16px; }
+.nav-top a { color: rgba(255,255,255,0.8); text-decoration: none; font-size: 14px; margin: 0 10px; }
+.nav-top a:hover { color: #fff; }
+
+.post-box {
+  background: rgba(255,255,255,0.95);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+}
+.post-box textarea {
+  width: 100%;
+  border: none;
+  resize: none;
+  font-size: 16px;
+  line-height: 1.6;
+  outline: none;
+  min-height: 80px;
+  font-family: inherit;
+}
+.post-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  border-top: 1px solid #eee;
+  padding-top: 12px;
+}
+.post-actions label {
+  cursor: pointer;
+  color: #667eea;
+  font-size: 14px;
+}
+.post-actions input[type="file"] { display: none; }
+.btn-post {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  border: none;
+  padding: 8px 24px;
+  border-radius: 20px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.btn-post:disabled { opacity: 0.5; cursor: default; }
+
+.preview-area {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.preview-area .thumb {
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+.preview-area .thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+.preview-area .thumb .rm {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 12px;
+  cursor: pointer;
+  line-height: 20px;
+  text-align: center;
+}
+
+.entry-card {
+  background: rgba(255,255,255,0.95);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  position: relative;
+}
+.entry-card .time { font-size: 12px; color: #999; margin-bottom: 8px; }
+.entry-card .text { font-size: 15px; line-height: 1.7; color: #333; white-space: pre-wrap; }
+.entry-card .img-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.entry-card .img-grid img {
+  max-width: calc(50% - 4px);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.entry-card .btn-del {
+  position: absolute; top: 12px; right: 12px;
+  background: none; border: none; color: #ccc; cursor: pointer; font-size: 18px;
+}
+.entry-card .btn-del:hover { color: #e74c3c; }
+.empty-msg { text-align: center; color: rgba(255,255,255,0.7); padding: 40px 0; }
+
+/* 灯箱 */
+.lightbox {
+  display: none;
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.85);
+  z-index: 9999;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+.lightbox img { max-width: 90%; max-height: 90%; border-radius: 8px; }
+</style>
+</head>
+<body>
+
+<div class="nav-top">
+  <a href="67zz.html">查看相册</a>
+  <a href="index.html">退出</a>
+</div>
+
+<div class="container">
+  <div class="post-box">
+    <textarea id="diaryText" placeholder="写下今天的日记..."></textarea>
+    <div class="preview-area" id="previewArea"></div>
+    <div class="post-actions">
+      <label>
+        <span id="fileLabel">+ 添加图片</span>
+        <input type="file" id="imageInput" accept="image/*" multiple>
+      </label>
+      <button class="btn-post" id="btnPost" onclick="postEntry()">发布</button>
+    </div>
+  </div>
+  <div id="entries"></div>
+</div>
+
+<div class="lightbox" id="lightbox" onclick="this.style.display='none'">
+  <img id="lightboxImg" src="" alt="">
+</div>
+
+<script>
+const imageInput = document.getElementById('imageInput');
+const previewArea = document.getElementById('previewArea');
+const fileLabel = document.getElementById('fileLabel');
+
+let selectedFiles = []; // DataTransfer 不好用，直接维护文件列表
+
+imageInput.addEventListener('change', () => {
+  for (const f of imageInput.files) {
+    selectedFiles.push(f);
+  }
+  imageInput.value = '';
+  renderPreview();
+});
+
+function renderPreview() {
+  previewArea.innerHTML = '';
+  selectedFiles.forEach((file, i) => {
+    const thumb = document.createElement('div');
+    thumb.className = 'thumb';
+    const reader = new FileReader();
+    reader.onload = e => {
+      thumb.innerHTML = `<img src="${e.target.result}"><button class="rm" onclick="removeFile(${i})">&times;</button>`;
+    };
+    reader.readAsDataURL(file);
+    previewArea.appendChild(thumb);
+  });
+  fileLabel.textContent = selectedFiles.length ? `+ 添加图片(${selectedFiles.length})` : '+ 添加图片';
+}
+
+function removeFile(i) {
+  selectedFiles.splice(i, 1);
+  renderPreview();
+}
+
+async function postEntry() {
+  const text = document.getElementById('diaryText').value.trim();
+  if (!text && selectedFiles.length === 0) return alert('至少写点文字或添加图片哦~');
+
+  const btn = document.getElementById('btnPost');
+  btn.disabled = true;
+  btn.textContent = '发布中...';
+
+  const formData = new FormData();
+  formData.append('text', text);
+  selectedFiles.forEach(f => formData.append('images', f));
+
+  try {
+    const res = await fetch('/api/entries', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '服务器错误');
+    document.getElementById('diaryText').value = '';
+    selectedFiles = [];
+    renderPreview();
+    loadEntries();
+  } catch (e) {
+    alert('发布失败: ' + e.message);
+    console.error('Post error:', e);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '发布';
+  }
+}
+
+function formatTime(iso) {
+  const d = new Date(iso);
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function showLightbox(src) {
+  document.getElementById('lightboxImg').src = src;
+  document.getElementById('lightbox').style.display = 'flex';
+}
+
+async function loadEntries() {
+  try {
+    const res = await fetch('/api/entries');
+    const entries = await res.json();
+    const container = document.getElementById('entries');
+    if (!entries.length) {
+      container.innerHTML = '<div class="empty-msg">还没有日记，写下你的第一篇吧~</div>';
+      return;
+    }
+    container.innerHTML = entries.map(e => {
+      // 兼容旧数据: image -> images
+      const imgs = e.images || (e.image ? [e.image] : []);
+      return `
+        <div class="entry-card">
+          <button class="btn-del" onclick="delEntry('${e.id}')" title="删除">&times;</button>
+          <div class="time">${formatTime(e.createdAt)}</div>
+          ${e.text ? `<div class="text">${escHtml(e.text)}</div>` : ''}
+          ${imgs.length ? `<div class="img-grid">${imgs.map(img =>
+            `<img src="/uploads/${img}" onclick="showLightbox('/uploads/${img}')">`
+          ).join('')}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    console.error('Load error:', e);
+  }
+}
+
+async function delEntry(id) {
+  if (!confirm('确定删除这条日记？')) return;
+  await fetch('/api/entries/' + id, { method: 'DELETE' });
+  loadEntries();
+}
+
+loadEntries();
+</script>
+</body>
+</html>

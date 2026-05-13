@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <title>记录</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录页面</title>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+  @keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+      transform: translateY(0);
+    }
+    40% {
+      transform: translateY(-30px);
+    }
+    60% {
+      transform: translateY(-15px);
+    }
+  }
+
+  .bouncing-text {
+    font-size: 24px;
+    animation: bounce 2s infinite;
+  }
+    #movingText {
+    position: absolute;
+    font-size: 24px;
+    user-select: none; /* 防止用户选中文字 */
+    opacity: 0.7; /* 设置文字的透明度为0.7 */
+    transition: opacity 0.5s; /* 平滑过渡效果 */
+  }
+        .bg {
+            background-image: url('picture1/2.jpg'); /* 将'background.jpg'替换为你的图片路径 */
+            height: 100%;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: cover;
+        }
+        .title-container {
+            position: absolute;
+            top: 20%; /* 调整标题的位置 */
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: black; /* 标题颜色 */
+            font-size: 2em; /* 标题大小 */
+            text-align: center;
+            width: 100%;
+        }
+
+        .login-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.3);
+            padding: 20px;
+            border-radius: 5px;
+            text-align: center;
+        }
+    </style>
+</head>
+<div id="movingText">记录</div>
+<body class="bg">
+
+<div class="title-container">
+    <h1>记录的小作品</h1> <!-- 这里是网页的标题 -->
+</div>
+<div class="login-container">
+    <h2 class="bouncing-text">请按提示输入</h2>
+    <form id="loginForm">
+        账号（姓氏）：<input type="text" id="username" required><br>
+        密码（Your love）：<input type="password" id="password" required><br>
+        <input type="button" value="登录" onclick="login()">
+    </form>
+</div>
+
+<script>
+    document.getElementById('loginForm').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault(); // 阻止默认行为（例如表单提交）
+                login(); // 调用登录函数
+            }
+        });
+          document.addEventListener('DOMContentLoaded', function() {
+    var img = document.querySelector('.fade-in-image');
+    img.onload = function() {
+      img.classList.add('fade-in-image');
+    };
+  });
+    function login() {
+        var username = document.getElementById('username').value;
+        var password = document.getElementById('password').value;
+
+        if (username === 'zhou' && password === '123456') {
+            window.location.href = '67zz.html';
+        } else {
+            alert('账号或密码错误！');
+        }
+    }
+     function moveText() {
+    const textElement = document.getElementById('movingText');
+    const maxX = window.innerWidth - textElement.offsetWidth;
+    const maxY = window.innerHeight - textElement.offsetHeight;
+
+    // 生成随机位置
+    const newX = Math.floor(Math.random() * maxX);
+    const newY = Math.floor(Math.random() * maxY);
+
+    // 设置文字的新位置
+    textElement.style.left = newX + 'px';
+    textElement.style.top = newY + 'px';
+  }
+
+  // 每隔一段时间移动文字
+  setInterval(moveText, 1000); // 每1000毫秒移动一次
+</script>
+</body>
+</html>
+

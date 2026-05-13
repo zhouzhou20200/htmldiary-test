@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>记录</title>
+<style>
+    /* 整个页面的样式 */
+    body, html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+    }
+
+    /* 设置背景图片 */
+    body {
+        background-image: url('picture1/canglanse.jpg');
+        background-size: cover;
+        background-attachment: fixed;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+
+    .fade-in-image {
+        opacity: 0;
+        animation: fadeIn 3s forwards;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    /* 导航栏样式 */
+    .navbar {
+        overflow: hidden;
+        background-color: rgba(0, 0, 0, 0.5);
+        position: fixed;
+        top: 0;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        z-index: 100;
+    }
+
+    .navbar a {
+        float: left;
+        display: block;
+        color: #f2f2f2;
+        text-align: center;
+        padding: 14px 16px;
+        text-decoration: none;
+    }
+
+    .navbar a:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+        color: white;
+    }
+
+    /* 内容区域样式 */
+    .section {
+        padding: 60px 0;
+        height: 110vh;
+        color: white;
+        text-align: center;
+    }
+
+    .section img {
+        max-width: 100%;
+        height: auto;
+        margin-bottom: 20px;
+    }
+
+    .small-image {
+        width: 520px;
+        height: auto;
+    }
+
+    .small-high {
+        width: auto;
+        height: 1px;
+    }
+
+    .low-opacity {
+        opacity: 0.5;
+        color: white;
+        text-decoration: none;
+    }
+
+    .low-opacity:hover {
+        opacity: 0.8;
+    }
+
+    /* 统一风格的透明盒子（与日记卡片完全一致） */
+    .transparent-box {
+        background-color: rgba(128, 128, 128, 0.25);
+        padding: 20px;
+        border: 1px solid rgba(0, 0, 0, 0.3);
+        border-radius: 12px;
+        width: 50%;
+        max-width: 800px;
+        overflow: auto;
+        margin: 20px auto;
+        backdrop-filter: blur(2px);
+        text-align: left;
+    }
+
+    #videoContainer {
+        display: none;
+        max-width: 100%;
+        margin-top: 20px;
+    }
+
+    .scrolling-text {
+        position: absolute;
+        white-space: nowrap;
+        overflow: hidden;
+        width: 100%;
+        height: 100px;
+        line-height: 100px;
+        text-align: center;
+    }
+
+    .producer-info {
+        position: fixed;
+        left: 10px;
+        top: 10px;
+        color: white;
+        background-color: rgba(0, 0, 0, 0.5);
+        padding: 5px;
+        border-radius: 5px;
+        font-size: 14px;
+        z-index: 1000;
+    }
+
+    /* ==================== 统一风格的日记卡片 ==================== */
+    .diary-card {
+        background-color: rgba(128, 128, 128, 0.25);
+        border: 1px solid rgba(0, 0, 0, 0.3);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 16px;
+        text-align: left;
+        backdrop-filter: blur(2px);
+        transition: background-color 0.2s;
+    }
+
+    .diary-card:hover {
+        background-color: rgba(128, 128, 128, 0.3);
+    }
+
+    .diary-time {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.5);
+        margin-bottom: 10px;
+    }
+
+    .diary-text {
+        color: #fff;
+        font-size: 15px;
+        line-height: 1.7;
+        white-space: pre-wrap;
+    }
+
+    .diary-images {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    .diary-images img {
+        max-width: calc(50% - 4px);
+        border-radius: 8px;
+        cursor: pointer;
+        margin-bottom: 0;
+        transition: transform 0.2s;
+    }
+
+    .diary-images img:hover {
+        transform: scale(1.02);
+    }
+
+    .diary-empty {
+        color: rgba(255, 255, 255, 0.5);
+        text-align: center;
+        padding: 40px 0;
+        font-size: 14px;
+    }
+
+    .diary-empty a {
+        color: #ffd700;
+        text-decoration: none;
+    }
+
+    .diary-empty a:hover {
+        text-decoration: underline;
+    }
+</style>
+</head>
+<body>
+
+<!-- 导航栏 -->
+<div class="navbar">
+  <a href="#diary">日记</a>
+  <a href="#school">学校</a>
+  <a href="#home">家</a>
+  <a href="#jinan">济南</a>
+  <a href="#zibo">淄博</a>
+  <a href="diary.html" style="color:#ffd700;">写日记</a>
+</div>
+
+<div class="producer-info">
+    制作人：记录
+</div>
+
+<!-- 日记区域 -->
+<div id="diary" class="section" style="height:auto;min-height:50vh;">
+    <div id="diaryEntries" style="max-width:640px;margin:0 auto;padding:20px;">
+        <div class="diary-empty">加载中...</div>
+    </div>
+</div>
+
+<!-- 内容区域 -->
+<div id="videoContainer">
+    <video id="videoPlayer" width="640" controls>
+        <source src="picture1/德x.mp4" type="video/mp4">
+        您的浏览器不支持视频标签。
+    </video>
+</div>
+
+<div id="school" class="section">
+    <img id="thumbnail" src="picture1/德1.jpg" alt="德州学院" class="small-image" style="cursor:pointer;">
+
+    <section class="transparent-box">
+        <h3><a href="https://www.dzu.edu.cn/xxgk/xxjj.htm" class="low-opacity"> 德州学院梗概</a></h3>
+        <p>德州学院的校训是厚德启智励志博学，也是一个大学生的我们的一个梦开启的地方。</p>
+    </section>
+    <img src="picture1/德2.jpg" alt="早八的桥" class="small-image fade-in-image">
+    <img src="picture1/德3.jpg" alt="德院的猫" class="small-image fade-in-image">
+    <section class="transparent-box">
+        <h3>学院微日常</h3>
+        <p>早上的大桥充满了勃勃生机，在众多大学生中的我们努力前行，前往教室学习新的知识并完成教学目标。</p>
+        <p>中午到下午，太阳出来喽，猫猫出来晒太阳，今天又是一个“美好的一天”。</p>
+    </section>
+</div>
+
+<div id="home" class="section">
+    <img src="picture1/家2.jpg" alt="天空" class="small-image fade-in-image">
+    <img src="picture1/家1.jpg" alt="午饭" class="small-image fade-in-image">
+    <section class="transparent-box">
+        <h3>午饭</h3>
+        <p>和老妈一起整的午饭ps：（老妈指挥，我来整）以下为做排骨步骤：1、排骨加入冷水煮沸去腥，加入大料、生姜等煮熟2、捞出，热油后，加入冰糖后加入热水浸没排骨即可</p>
+    </section>
+    <img src="picture1/家3.jpg" alt="农忙1" class="small-image fade-in-image">
+    <img src="picture1/家5.jpg" alt="农忙2" class="small-image fade-in-image">
+    <section class="transparent-box">
+        <h3>农忙：然后去帮忙</h3>
+    </section>
+</div>
+
+<div id="jinan" class="section">
+    <img src="picture1/ji2.jpg" alt="济南的大明湖" class="small-image fade-in-image">
+    <img src="picture1/ji1.jpg" alt="济南的泉——趵突泉" class="small-image fade-in-image">
+    <section class="transparent-box">
+        <h3>水</h3>
+        <p>大明湖vs趵突泉</p>
+    </section>
+    <img src="picture1/ji3.jpg" alt="济南的楼" class="small-image fade-in-image" >
+    <img src="picture1/ji4.jpg" alt="济南的博物馆" class="small-image fade-in-image">
+    <section class="transparent-box">
+        <h3>超然楼与山东博物馆</h3>
+        <p>
+           一个最近火起来的建筑，也是一个作为一个土生土长的济南人的我，一个不经常去的地方 <a href="https://news.qq.com/rain/a/20230206A099GU00" class="low-opacity"> 超然楼</a>。<br>
+            <a href="https://www.sdmuseum.com/" class="low-opacity"> 山东博物馆</a>是一个历史气息浓厚的建筑，宽阔的内部空间，从石器时代到抗日战争时期的物品都保存在内。
+        </p>
+    </section>
+</div>
+
+<div id="zibo" class="section">
+    <img src="picture1/zibo1.jpg" alt="淄博" class="small-image fade-in-image">
+    <img src="picture1/zibo.jpg" alt="琉璃博物馆" class="small-image fade-in-image">
+    <section class="transparent-box">
+        <h3>淄博</h3>
+        <p>
+            一个因烧烤而火起来的城市 <a href="https://news.qq.com/rain/a/20241026A02Q2900" class="low-opacity"> 淄博</a>，我也有幸去过一次，司机没德州的司机和善或者说亲和，冷冰冰的。<br>
+            <a href="http://www.zbstcbwg.cn/" class="low-opacity"> 琉璃博物馆</a>一个很有趣的地方，虽然没山东博物馆大，但瓷器很多也很有趣，各种奇怪的造型百花争鸣。
+        </p>
+    </section>
+    <img src="picture1/zibo2.jpg" alt="琉璃博物馆" class="small-image fade-in-image">
+    <img src="picture1/zibo3.jpg" alt="琉璃博物馆" class="small-image fade-in-image">
+</div>
+
+<script>
+// 平滑滚动导航
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        document.querySelector(this.getAttribute('href')).scrollIntoView({
+            behavior: 'smooth'
+        });
+    });
+});
+
+// 视频点击播放
+document.addEventListener('DOMContentLoaded', function() {
+    const thumbnail = document.getElementById('thumbnail');
+    const videoContainer = document.getElementById('videoContainer');
+    const videoPlayer = document.getElementById('videoPlayer');
+
+    if (thumbnail && videoContainer && videoPlayer) {
+        thumbnail.addEventListener('click', function() {
+            thumbnail.style.display = 'none';
+            videoContainer.style.display = 'block';
+            videoPlayer.play();
+        });
+    }
+});
+
+// 日记工具函数
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function formatTime(iso) {
+  const d = new Date(iso);
+  const pad = n => String(n).padStart(2, '0');
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes());
+}
+
+// 使用统一CSS类的日记渲染函数
+function renderDiaryEntries(entries) {
+  const container = document.getElementById('diaryEntries');
+  if (!entries.length) {
+    container.innerHTML = '<div class="diary-empty">还没有日记，<a href="diary.html">去写一篇</a>吧~</div>';
+    return;
+  }
+  container.innerHTML = entries.map(e => {
+    const imgs = e.images || (e.image ? [e.image] : []);
+    return '<div class="diary-card">'
+      + '<div class="diary-time">'+formatTime(e.createdAt)+'</div>'
+      + (e.text ? '<div class="diary-text">'+escHtml(e.text)+'</div>' : '')
+      + (imgs.length ? '<div class="diary-images">'+imgs.map(img =>
+          '<img src="/uploads/'+img+'" onclick="showDiaryImg(this.src)">'
+        ).join('')+'</div>' : '')
+      + '</div>';
+  }).join('');
+}
+
+// 加载日记
+async function loadDiaryEntries() {
+  try {
+    const res = await fetch(`/api/entries?t=${Date.now()}`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const entries = await res.json();
+    renderDiaryEntries(entries);
+    console.log('日记加载成功，当前', entries.length, '条');
+  } catch(e) {
+    console.error('日记加载失败:', e);
+    document.getElementById('diaryEntries').innerHTML =
+      '<div style="color:#ff6b6b;text-align:center;padding:40px 0;font-size:14px;">'
+      + '日记加载失败！<br>请确认地址栏是 <b>http://localhost:3000/67zz.html</b><br>'
+      + '（不要双击文件打开）<br><br>'
+      + '<span style="color:rgba(255,255,255,0.5);font-size:12px;">'+e.message+'</span></div>';
+  }
+}
+
+// 日记图片灯箱
+var lb = document.createElement('div');
+lb.id = 'diaryLightbox';
+lb.style.cssText = 'display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9999;cursor:pointer;justify-content:center;align-items:center;';
+lb.onclick = function(){ lb.style.display='none'; };
+lb.innerHTML = '<img id="diaryLbImg" style="max-width:90%;max-height:90%;border-radius:8px;">';
+document.body.appendChild(lb);
+
+function showDiaryImg(src) {
+  document.getElementById('diaryLbImg').src = src;
+  lb.style.display = 'flex';
+}
+
+// 页面初始化
+document.addEventListener('DOMContentLoaded', loadDiaryEntries);
+// 定时自动刷新
+setInterval(loadDiaryEntries, 2000);
+// 切换页面时刷新
+document.addEventListener('visibilitychange', function() {
+  if (!document.hidden) loadDiaryEntries();
+});
+// 实时更新通知
+window.addEventListener('storage', function(e) {
+  if (e.key === 'diaryUpdated') {
+    console.log('收到日记更新通知，立即刷新');
+    loadDiaryEntries();
+  }
+});
+</script>
+
+</body>
+</html>
