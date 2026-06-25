@@ -1,0 +1,1893 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>记录</title>
+<link rel="stylesheet" href="/css/common.css">
+<style>
+    /* ==================== 主题CSS变量 ==================== */
+    :root {
+        --67zz-card-bg: rgba(255, 255, 255, 0.08);
+        --67zz-card-hover: rgba(255, 255, 255, 0.13);
+        --67zz-card-border: rgba(255, 255, 255, 0.08);
+        --67zz-text: #2d3436;
+        --67zz-text-light: rgba(255, 255, 255, 0.85);
+        --67zz-text-muted: rgba(255, 255, 255, 0.45);
+        --67zz-navbar-bg: rgba(0, 0, 0, 0.55);
+        --67zz-section-title: rgba(255, 255, 255, 0.95);
+        --67zz-box-bg: rgba(255, 255, 255, 0.08);
+        --67zz-box-border: rgba(255, 255, 255, 0.1);
+        --67zz-banner-bg: rgba(255, 100, 100, 0.12);
+        --67zz-banner-border: rgba(255, 100, 100, 0.2);
+        --67zz-stats-bg: rgba(255, 255, 255, 0.06);
+        --67zz-stats-item-bg: rgba(255, 255, 255, 0.08);
+        --67zz-timeline-line: rgba(255, 255, 255, 0.15);
+        --67zz-timeline-dot: #667eea;
+        --67zz-highlight-glow: rgba(255, 215, 0, 0.3);
+    }
+    [data-theme="dark"] {
+        --67zz-card-bg: rgba(15, 15, 30, 0.3);
+        --67zz-card-hover: rgba(15, 15, 30, 0.45);
+        --67zz-card-border: rgba(255, 255, 255, 0.06);
+        --67zz-text: #e0e0e0;
+        --67zz-text-light: rgba(255, 255, 255, 0.95);
+        --67zz-text-muted: rgba(255, 255, 255, 0.5);
+        --67zz-navbar-bg: rgba(0, 0, 0, 0.7);
+        --67zz-section-title: rgba(255, 255, 255, 0.98);
+        --67zz-box-bg: rgba(15, 15, 30, 0.25);
+        --67zz-box-border: rgba(255, 255, 255, 0.08);
+        --67zz-banner-bg: rgba(255, 100, 100, 0.18);
+        --67zz-banner-border: rgba(255, 100, 100, 0.3);
+        --67zz-stats-bg: rgba(15, 15, 30, 0.2);
+        --67zz-stats-item-bg: rgba(255, 255, 255, 0.06);
+        --67zz-timeline-line: rgba(255, 255, 255, 0.1);
+        --67zz-timeline-dot: #8b9cf7;
+        --67zz-highlight-glow: rgba(255, 215, 0, 0.4);
+    }
+
+    /* ==================== 星空叠加层 ==================== */
+    .star-sky-overlay {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        z-index: -1;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.8s ease;
+    }
+    .star-sky-overlay canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+    body.timeline-active .star-sky-overlay { opacity: 1; }
+    body.timeline-active {
+        background-image: none !important;
+        background-color: #000;
+    }
+
+    /* ==================== 时光轴深色适配 ==================== */
+    body.timeline-active {
+        --67zz-card-bg: rgba(20, 22, 45, 0.5);
+        --67zz-card-hover: rgba(30, 32, 55, 0.6);
+        --67zz-card-border: rgba(120, 140, 255, 0.12);
+        --67zz-text: #e8e8f2;
+        --67zz-text-light: rgba(255, 255, 255, 0.95);
+        --67zz-text-muted: rgba(255, 255, 255, 0.55);
+        --67zz-navbar-bg: rgba(0, 0, 0, 0.75);
+        --67zz-timeline-line: rgba(120, 140, 255, 0.25);
+        --67zz-timeline-dot: #8b9cf7;
+        --67zz-box-bg: rgba(20, 22, 45, 0.4);
+        --67zz-box-border: rgba(120, 140, 255, 0.1);
+    }
+    body.timeline-active .diary-time {
+        color: rgba(255, 255, 255, 0.6);
+    }
+    body.timeline-active .diary-text {
+        color: #e8e8f2;
+    }
+    body.timeline-active .timeline-date-label {
+        color: rgba(255, 255, 255, 0.85);
+        opacity: 1;
+    }
+    body.timeline-active .timeline-date-dot {
+        box-shadow: 0 0 14px rgba(139, 156, 247, 0.6);
+    }
+    body.timeline-active .diary-empty {
+        color: rgba(255, 255, 255, 0.5);
+    }
+    body.timeline-active .location-tag {
+        color: #ffd700;
+        background: rgba(255, 215, 0, 0.15);
+    }
+    body.timeline-active .load-more-btn {
+        color: rgba(255,255,255,0.7);
+        border-color: rgba(255,255,255,0.25);
+    }
+    body.timeline-active .stats-header,
+    body.timeline-active .stats-body {
+        background: rgba(20, 22, 45, 0.45);
+        border-color: rgba(120, 140, 255, 0.1);
+    }
+
+    body, html { margin: 0; padding: 0; height: 100%; overflow-x: hidden; }
+    body {
+        background-image: url('/picture1/canglanse.jpg');
+        background-size: cover;
+        background-attachment: fixed;
+        background-position: center;
+        background-repeat: no-repeat;
+        transition: background-color 0.8s ease;
+    }
+    /* 导航锚点偏移修复 */
+    [id] { scroll-margin-top: 60px; }
+
+    .fade-in-image {
+        opacity: 0;
+        animation: fadeIn 2.5s ease forwards;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 导航栏 */
+    .navbar {
+        background: var(--67zz-navbar-bg);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        position: fixed;
+        top: 0;
+        width: 100%;
+        z-index: 100;
+        transition: background 0.3s ease;
+        display: flex;
+    }
+    .navbar-inner {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    .navbar-inner::-webkit-scrollbar { display: none; }
+    .navbar a {
+        flex-shrink: 0;
+        white-space: nowrap;
+        color: rgba(255,255,255,0.8);
+        text-align: center;
+        padding: 14px 18px;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        position: relative;
+        transition: background 0.2s ease, color 0.2s ease;
+    }
+    .navbar a::after {
+        content: '';
+        position: absolute;
+        bottom: 6px;
+        left: 50%;
+        transform: translateX(-50%) scaleX(0);
+        width: 24px;
+        height: 2px;
+        background: rgba(255,255,255,0.6);
+        border-radius: 1px;
+        transition: transform 0.25s ease;
+    }
+    .navbar a:hover {
+        background: rgba(255, 255, 255, 0.12);
+        color: #fff;
+    }
+    .navbar a:hover::after {
+        transform: translateX(-50%) scaleX(1);
+    }
+
+    /* 通用板块 */
+    .section {
+        padding: 60px 0;
+        min-height: 100vh;
+        color: white;
+        text-align: center;
+    }
+    .section img {
+        height: auto;
+        margin-bottom: 20px;
+    }
+    .small-image {
+        max-width: 520px;
+        width: 100%;
+        height: auto;
+        border-radius: 12px;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .image-row {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        padding: 0 40px;
+    }
+    .image-row .small-image {
+        max-width: calc(50% - 26px);
+    }
+
+    /* 低透明度链接 */
+    .low-opacity {
+        opacity: 0.55;
+        color: white;
+        text-decoration: none;
+        transition: opacity 0.2s ease;
+    }
+    .low-opacity:hover { opacity: 0.85; }
+
+    /* 透明信息框 */
+    .transparent-box {
+        background: var(--67zz-box-bg);
+        padding: 28px;
+        border: 1px solid var(--67zz-box-border);
+        border-radius: 20px;
+        width: 50%;
+        max-width: 800px;
+        overflow: auto;
+        margin: 24px auto;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+        text-align: left;
+    }
+
+    /* 制作人信息 */
+    .producer-info {
+        position: fixed;
+        left: 12px;
+        top: 52px;
+        color: rgba(255,255,255,0.85);
+        background: rgba(0, 0, 0, 0.45);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        z-index: 1000;
+        border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    /* 日记卡片 */
+    .diary-card {
+        background: var(--67zz-card-bg);
+        border: 1px solid var(--67zz-card-border);
+        border-radius: 20px;
+        padding: 24px;
+        margin-bottom: 16px;
+        text-align: left;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+        overflow: hidden;
+    }
+    .diary-card:hover {
+        background: var(--67zz-card-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 28px rgba(0,0,0,0.12);
+    }
+    .diary-time {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.45);
+        margin-bottom: 10px;
+        letter-spacing: 0.3px;
+    }
+    .diary-text {
+        color: var(--67zz-text);
+        font-size: 15px;
+        line-height: 1.75;
+        white-space: pre-wrap;
+    }
+    .diary-images {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 14px;
+        justify-content: center;
+    }
+    .diary-images img {
+        max-width: var(--diary-img-max-w, 50%);
+        max-height: 300px;
+        height: auto;
+        object-fit: contain;
+        border-radius: 12px;
+        cursor: pointer;
+        margin-bottom: 0;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    /* 单张图片居中、限制最大宽度 */
+    .diary-images img:only-child {
+        max-width: min(var(--diary-img-max-w, 75%), 100%);
+        display: block;
+        margin: 0 auto;
+    }
+    .diary-images img:hover {
+        transform: scale(1.02);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    }
+    .diary-empty {
+        color: rgba(255, 255, 255, 0.45);
+        text-align: center;
+        padding: 48px 0;
+        font-size: 14px;
+    }
+    .diary-empty a {
+        color: #ffd700;
+        text-decoration: none;
+        transition: opacity 0.2s ease;
+    }
+    .diary-empty a:hover {
+        opacity: 0.8;
+        text-decoration: underline;
+    }
+
+    /* 日记分类标签 */
+    .diary-tag {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 600;
+        color: #fff;
+        padding: 3px 12px;
+        border-radius: 10px;
+        margin-right: 6px;
+        margin-bottom: 8px;
+        border: 1px solid transparent;
+        letter-spacing: 0.3px;
+        transition: opacity 0.2s ease;
+    }
+    .diary-tag:hover {
+        opacity: 0.85;
+    }
+    .diary-tag.tag-travel { color: #fff; background: #e67e22; border-color: #d35400; }
+    .diary-tag.tag-daily  { color: #fff; background: #3498db; border-color: #2980b9; }
+    .diary-tag.tag-mood   { color: #fff; background: #9b59b6; border-color: #8e44ad; }
+
+    /* 加载更多按钮 */
+    .load-more-btn {
+        display: inline-block;
+        padding: 9px 28px;
+        background: transparent;
+        color: rgba(255,255,255,0.65);
+        border: 1.5px solid rgba(255,255,255,0.2);
+        border-radius: 24px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 500;
+        transition: all 0.25s ease;
+    }
+    .load-more-btn:hover {
+        background: rgba(255,255,255,0.12);
+        color: #fff;
+        border-color: rgba(255,255,255,0.35);
+        transform: translateY(-1px);
+    }
+
+    /* 旅游地点标签 */
+    .diary-card .location-tag {
+        display: inline-block;
+        font-size: 12px;
+        font-weight: 500;
+        color: #ffd700;
+        background: rgba(255, 215, 0, 0.1);
+        padding: 3px 12px;
+        border-radius: 12px;
+        margin-bottom: 10px;
+    }
+
+    /* 旅游板块标题 */
+    .travel-section-title {
+        color: rgba(255,255,255,0.95);
+        font-size: 22px;
+        font-weight: 600;
+        margin-bottom: 24px;
+        text-shadow: 0 2px 12px rgba(0,0,0,0.2);
+        letter-spacing: 1px;
+    }
+    .travel-section-title::before {
+        content: '\1F4CD ';
+    }
+
+    /* ==================== 回到顶部按钮 ==================== */
+    .back-to-top {
+        position: fixed;
+        right: 24px;
+        bottom: 28px;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.45);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: rgba(255,255,255,0.8);
+        font-size: 18px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99;
+        opacity: 0;
+        transform: translateY(12px);
+        pointer-events: none;
+        transition: opacity 0.3s ease, transform 0.3s ease, background 0.2s ease;
+    }
+    .back-to-top.visible {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+    }
+    .back-to-top:hover {
+        background: rgba(255,255,255,0.18);
+        color: #fff;
+    }
+
+    /* ==================== 倒数日常驻悬浮组件 ==================== */
+    .countdown-widget {
+        position: fixed;
+        right: 20px;
+        bottom: 80px;
+        z-index: 198;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        pointer-events: none;
+        max-height: calc(100vh - 160px);
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 4px;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255,255,255,0.06) transparent;
+    }
+    .countdown-widget::-webkit-scrollbar { width: 3px; }
+    .countdown-widget::-webkit-scrollbar-track { background: transparent; }
+    .countdown-widget::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.06);
+        border-radius: 10px;
+    }
+
+    /* 添加按钮 */
+    .countdown-add-fab {
+        pointer-events: auto;
+        align-self: flex-end;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: rgba(255,255,255,0.7);
+        font-size: 20px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+    }
+    .countdown-add-fab:hover {
+        background: rgba(255,255,255,0.15);
+        color: #fff;
+        transform: scale(1.1);
+    }
+
+    /* 倒数日小卡片 */
+    .countdown-card {
+        pointer-events: auto;
+        position: relative;
+        width: 200px;
+        border-radius: 14px;
+        padding: 14px 16px;
+        overflow: hidden;
+        border: 1px solid rgba(255,255,255,0.08);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        flex-shrink: 0;
+        background: rgba(0, 0, 0, 0.45);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+    }
+    .countdown-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 28px rgba(0,0,0,0.25);
+    }
+    .countdown-card-bg {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-size: cover;
+        background-position: center;
+        opacity: 0.18;
+        border-radius: 14px;
+        z-index: 0;
+    }
+    .countdown-card-content {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .countdown-card-left {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 44px;
+    }
+    .countdown-card-days {
+        font-size: 24px;
+        font-weight: 700;
+        color: rgba(255,255,255,0.9);
+        line-height: 1;
+    }
+    .countdown-card-days .past { color: rgba(255,255,255,0.3); }
+    .countdown-card-days .soon { color: #ffd700; }
+    .countdown-card-days .today { color: #81ecec; }
+    .countdown-card-unit {
+        font-size: 10px;
+        color: rgba(255,255,255,0.35);
+        margin-top: 2px;
+    }
+    .countdown-card-right {
+        flex: 1;
+        min-width: 0;
+    }
+    .countdown-card-title {
+        color: rgba(255,255,255,0.85);
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.3;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .countdown-card-date {
+        font-size: 10px;
+        color: rgba(255,255,255,0.3);
+        margin-top: 3px;
+    }
+    .countdown-card-actions {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        z-index: 3;
+        display: flex;
+        gap: 3px;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+    .countdown-card:hover .countdown-card-actions { opacity: 1; }
+    .countdown-card-actions button {
+        background: rgba(0,0,0,0.5);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: rgba(255,255,255,0.6);
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 11px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s ease;
+    }
+    .countdown-card-actions button:hover {
+        background: rgba(255,255,255,0.15);
+        color: #fff;
+    }
+    .countdown-card-actions .del-btn:hover {
+        background: rgba(255,80,80,0.45);
+    }
+
+    /* 倒数日表单弹窗 */
+    .countdown-modal {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.6);
+        z-index: 300;
+        align-items: center;
+        justify-content: center;
+    }
+    .countdown-modal.show {
+        display: flex;
+    }
+    .countdown-modal-box {
+        background: rgba(20, 20, 30, 0.9);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 20px;
+        padding: 28px;
+        width: 320px;
+        max-width: 90vw;
+        box-shadow: 0 16px 48px rgba(0,0,0,0.3);
+    }
+    .countdown-modal-box h4 {
+        color: rgba(255,255,255,0.9);
+        font-size: 15px;
+        margin: 0 0 18px 0;
+        font-weight: 600;
+    }
+    .countdown-modal-box label {
+        display: block;
+        color: rgba(255,255,255,0.5);
+        font-size: 12px;
+        margin-bottom: 5px;
+    }
+    .countdown-modal-box input[type="text"],
+    .countdown-modal-box input[type="date"],
+    .countdown-modal-box input[type="url"] {
+        width: 100%;
+        padding: 9px 12px;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 10px;
+        color: rgba(255,255,255,0.9);
+        font-size: 14px;
+        font-family: inherit;
+        outline: none;
+        margin-bottom: 14px;
+        transition: border-color 0.2s ease;
+        box-sizing: border-box;
+    }
+    .countdown-modal-box input:focus {
+        border-color: rgba(255,255,255,0.3);
+    }
+    .countdown-modal-box input::placeholder {
+        color: rgba(255,255,255,0.25);
+    }
+    .countdown-modal-box input[type="date"]::-webkit-calendar-picker-indicator {
+        filter: invert(0.7);
+    }
+    .countdown-modal-box input[type="file"] {
+        width: 100%;
+        padding: 8px;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 10px;
+        color: rgba(255,255,255,0.7);
+        font-size: 13px;
+        cursor: pointer;
+    }
+    .countdown-modal-box input[type="file"]::-webkit-file-upload-button {
+        background: rgba(255,255,255,0.1);
+        color: rgba(255,255,255,0.8);
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 8px;
+        padding: 5px 12px;
+        font-size: 12px;
+        cursor: pointer;
+        margin-right: 10px;
+        transition: background 0.2s ease;
+    }
+    .countdown-modal-box input[type="file"]::-webkit-file-upload-button:hover {
+        background: rgba(255,255,255,0.18);
+    }
+    .countdown-modal-btns {
+        display: flex;
+        gap: 10px;
+        margin-top: 6px;
+    }
+    .countdown-modal-btns button {
+        flex: 1;
+        padding: 10px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        border: none;
+        transition: all 0.2s ease;
+    }
+    .countdown-modal-btns .cancel-btn {
+        background: rgba(255,255,255,0.06);
+        color: rgba(255,255,255,0.6);
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+    .countdown-modal-btns .cancel-btn:hover {
+        background: rgba(255,255,255,0.1);
+        color: #fff;
+    }
+    .countdown-modal-btns .save-btn {
+        background: rgba(255,255,255,0.12);
+        color: rgba(255,255,255,0.9);
+        border: 1px solid rgba(255,255,255,0.15);
+    }
+    .countdown-modal-btns .save-btn:hover {
+        background: rgba(255,255,255,0.2);
+    }
+
+    /* 空状态 */
+    .countdown-empty {
+        text-align: center;
+        padding: 32px 0;
+        color: rgba(255,255,255,0.3);
+        font-size: 13px;
+    }
+
+    /* ==================== 主题切换按钮 ==================== */
+    .theme-toggle-btn {
+        flex-shrink: 0;
+        background: none;
+        border: none;
+        color: rgba(255,255,255,0.7);
+        font-size: 18px;
+        cursor: pointer;
+        padding: 10px 14px;
+        transition: color 0.2s ease, transform 0.2s ease;
+        line-height: 1;
+    }
+    .theme-toggle-btn:hover {
+        color: #ffd700;
+        transform: scale(1.15);
+    }
+
+    /* ==================== 导航栏相恋天数 ==================== */
+    .nav-love-days {
+        flex-shrink: 0;
+        white-space: nowrap;
+        color: rgba(255,255,255,0.85);
+        font-size: 13px;
+        font-weight: 500;
+        padding: 8px 14px;
+        background: rgba(255, 107, 138, 0.15);
+        border-radius: 20px;
+        border: 1px solid rgba(255, 107, 138, 0.3);
+        margin-right: 8px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .nav-love-days #loveDaysNum {
+        font-size: 16px;
+        font-weight: 700;
+        color: #ff6b8a;
+        text-shadow: 0 0 10px rgba(255, 107, 138, 0.4);
+    }
+
+    /* ==================== 统计面板 ==================== */
+    .stats-panel {
+        max-width: 800px;
+        margin: 0 auto 20px;
+        padding: 0 20px;
+    }
+    .stats-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 14px;
+        background: var(--67zz-card-bg);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border: 1px solid var(--67zz-card-border);
+        border-radius: 12px;
+        cursor: pointer;
+        transition: background 0.2s ease;
+        margin-bottom: 0;
+    }
+    .stats-header:hover {
+        background: var(--67zz-card-hover);
+    }
+    .stats-header-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--67zz-text-light);
+    }
+    .stats-header-title::before { content: '📊 '; }
+    .stats-header-arrow {
+        font-size: 12px;
+        color: var(--67zz-text-muted);
+        transition: transform 0.3s ease;
+    }
+    .stats-header-arrow.open { transform: rotate(180deg); }
+    .stats-body {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.4s ease, padding 0.3s ease;
+        background: var(--67zz-card-bg);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border: 1px solid var(--67zz-card-border);
+        border-top: none;
+        border-radius: 0 0 12px 12px;
+        padding: 0 14px;
+    }
+    .stats-body.open {
+        max-height: 500px;
+        padding: 14px;
+    }
+    .stats-ym-nav {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+    .stats-ym-nav button {
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: var(--67zz-text-light);
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s ease;
+    }
+    .stats-ym-nav button:hover {
+        background: rgba(255,255,255,0.15);
+    }
+    .stats-ym-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--67zz-text-light);
+        min-width: 80px;
+        text-align: center;
+    }
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+    .stats-item {
+        text-align: center;
+        padding: 8px 4px;
+        background: var(--67zz-stats-item-bg);
+        border-radius: 10px;
+        border: 1px solid rgba(255,255,255,0.05);
+    }
+    .stats-item-num {
+        font-size: 18px;
+        font-weight: 700;
+        color: #667eea;
+        line-height: 1.2;
+    }
+    .stats-item-label {
+        font-size: 10px;
+        color: var(--67zz-text-muted);
+        margin-top: 2px;
+    }
+    .stats-chart-title {
+        font-size: 11px;
+        color: var(--67zz-text-muted);
+        margin-bottom: 6px;
+        text-align: center;
+    }
+    .stats-chart-container {
+        background: var(--67zz-stats-item-bg);
+        border-radius: 10px;
+        padding: 8px;
+        border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    /* ==================== 视图切换 ==================== */
+    .view-toggle {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+    .view-toggle-btn {
+        padding: 7px 18px;
+        border-radius: 20px;
+        border: 1.5px solid rgba(255,255,255,0.15);
+        background: transparent;
+        color: rgba(255,255,255,0.5);
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .view-toggle-btn:hover {
+        background: rgba(255,255,255,0.08);
+        color: rgba(255,255,255,0.8);
+    }
+    .view-toggle-btn.active {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: #fff;
+        border-color: transparent;
+        box-shadow: 0 2px 10px rgba(102,126,234,0.3);
+    }
+
+    /* ==================== 图片大小调控 ==================== */
+    .img-size-control {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 12px;
+        font-size: 12px;
+        color: rgba(255,255,255,0.5);
+    }
+    .img-size-control label {
+        white-space: nowrap;
+        cursor: default;
+    }
+    .img-size-control input[type="range"] {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 120px;
+        height: 4px;
+        background: rgba(255,255,255,0.15);
+        border-radius: 2px;
+        outline: none;
+        cursor: pointer;
+    }
+    .img-size-control input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border: 2px solid rgba(255,255,255,0.3);
+        cursor: pointer;
+        transition: transform 0.15s ease;
+    }
+    .img-size-control input[type="range"]::-webkit-slider-thumb:hover {
+        transform: scale(1.2);
+    }
+    .img-size-control input[type="range"]::-moz-range-thumb {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border: 2px solid rgba(255,255,255,0.3);
+        cursor: pointer;
+    }
+    .img-size-val {
+        min-width: 32px;
+        text-align: center;
+        color: rgba(255,255,255,0.7);
+        font-weight: 600;
+        font-size: 12px;
+    }
+
+    /* ==================== 时光轴视图 ==================== */
+    .timeline-container {
+        position: relative;
+        padding-left: 40px;
+        max-width: 640px;
+        margin: 0 auto;
+    }
+    .timeline-container::before {
+        content: '';
+        position: absolute;
+        left: 16px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: var(--67zz-timeline-line);
+        border-radius: 1px;
+    }
+    .timeline-date-group {
+        margin-bottom: 28px;
+        position: relative;
+    }
+    .timeline-date-dot {
+        position: absolute;
+        left: -32px;
+        top: 6px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--67zz-timeline-dot);
+        box-shadow: 0 0 10px rgba(102,126,234,0.4);
+        z-index: 2;
+    }
+    .timeline-date-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--67zz-text-light);
+        margin-bottom: 10px;
+        padding: 4px 0;
+        opacity: 0.7;
+    }
+    .timeline-entry {
+        margin-bottom: 12px;
+    }
+
+    /* ==================== 海报按钮 ==================== */
+    .poster-btn {
+        display: inline-block;
+        padding: 5px 14px;
+        border-radius: 14px;
+        border: 1px solid rgba(230,126,34,0.3);
+        background: rgba(230,126,34,0.08);
+        color: #e67e22;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        margin-top: 8px;
+    }
+    .poster-btn:hover {
+        background: rgba(230,126,34,0.18);
+        transform: translateY(-1px);
+    }
+
+    /* ==================== 倒数日高亮/纪念日 ==================== */
+    .countdown-card.highlight-soon {
+        border: 1.5px solid rgba(255, 215, 0, 0.5);
+        box-shadow: 0 0 16px var(--67zz-highlight-glow);
+        animation: highlightPulse 2s ease-in-out infinite;
+    }
+    @keyframes highlightPulse {
+        0%, 100% { box-shadow: 0 0 16px var(--67zz-highlight-glow); }
+        50% { box-shadow: 0 0 28px var(--67zz-highlight-glow); }
+    }
+    .countdown-card.today-special {
+        border: 1.5px solid rgba(129, 236, 236, 0.6);
+        box-shadow: 0 0 20px rgba(129, 236, 236, 0.3);
+    }
+    .countdown-card .repeat-badge {
+        font-size: 9px;
+        color: rgba(255,255,255,0.4);
+        background: rgba(255,255,255,0.08);
+        padding: 1px 6px;
+        border-radius: 6px;
+        margin-left: 4px;
+    }
+    .countdown-modal-box .repeat-selector {
+        margin-bottom: 14px;
+    }
+    .countdown-modal-box .repeat-selector label {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-right: 16px;
+        cursor: pointer;
+    }
+    .countdown-modal-box .repeat-selector input[type="radio"] {
+        accent-color: #667eea;
+    }
+
+    /* ==================== 响应式 ==================== */
+    @media (max-width: 768px) {
+        .countdown-widget {
+            right: 12px;
+            bottom: 70px;
+        }
+        .countdown-card {
+            width: 170px;
+            padding: 10px 12px;
+        }
+        .countdown-card-days {
+            font-size: 20px;
+        }
+        .countdown-card-title {
+            font-size: 12px;
+        }
+        .back-to-top {
+            right: 12px;
+            bottom: 20px;
+            width: 38px;
+            height: 38px;
+        }
+        .small-image {
+            max-width: 90vw;
+        }
+        .image-row .small-image {
+            max-width: calc(50% - 6px);
+        }
+        .transparent-box {
+            width: 85%;
+        }
+        .nav-love-days {
+            font-size: 12px;
+            padding: 6px 10px;
+        }
+        .nav-love-days #loveDaysNum {
+            font-size: 14px;
+        }
+        .stats-panel {
+            position: static;
+            width: auto;
+            max-width: 800px;
+            margin: 0 auto 20px;
+            padding: 0 12px;
+        }
+        .stats-grid { grid-template-columns: repeat(3, 1fr); }
+        .stats-item-num { font-size: 18px; }
+        .timeline-container { padding-left: 32px; }
+        .timeline-container::before { left: 12px; }
+        .timeline-date-dot { left: -26px; width: 10px; height: 10px; }
+        .view-toggle-btn { padding: 6px 14px; font-size: 12px; }
+        .img-size-control { gap: 8px; }
+        .img-size-control input[type="range"] { width: 90px; }
+        .diary-images img { max-height: 220px; }
+        .diary-images img:only-child { max-width: 100%; }
+    }
+</style>
+</head>
+<body>
+
+<!-- 星空叠加层 -->
+<div class="star-sky-overlay" id="starSkyOverlay">
+    <canvas id="starCanvas"></canvas>
+</div>
+
+<!-- 导航栏 -->
+<div class="navbar">
+  <div class="navbar-inner" id="navbarInner">
+    <a href="#diary">日记</a>
+    <span id="travelNavLinks"></span>
+    <a href="diary.html" style="color:#ffd700;">写日记</a>
+  </div>
+  <div class="nav-love-days" id="navLoveDays">💕 相恋 <span id="loveDaysNum">---</span> 天</div>
+  <button class="theme-toggle-btn" id="themeToggle" title="切换主题">🌙</button>
+</div>
+
+<div class="producer-info">
+    制作人：记录
+</div>
+
+<!-- 统计面板 -->
+<div class="stats-panel" id="statsPanel">
+    <div class="stats-header" id="statsHeader">
+        <span class="stats-header-title">月度统计</span>
+        <span class="stats-header-arrow" id="statsArrow">▼</span>
+    </div>
+    <div class="stats-body" id="statsBody">
+        <div class="stats-ym-nav">
+            <button id="statsYMPrev">‹</button>
+            <span class="stats-ym-label" id="statsYMLabel"></span>
+            <button id="statsYMNext">›</button>
+        </div>
+        <div class="stats-grid" id="statsGrid"></div>
+        <div class="stats-chart-title">📈 每日发布数</div>
+        <div class="stats-chart-container">
+            <canvas id="statsChart" width="700" height="160" style="width:100%;height:auto;"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- 日记区域 -->
+<div id="diary" class="section" style="height:auto;min-height:50vh;">
+    <h2 style="color:#fff;font-size:22px;margin-bottom:16px;text-shadow:0 2px 8px rgba(0,0,0,0.3);">📝 日常日记</h2>
+    <div class="view-toggle">
+        <button class="view-toggle-btn active" data-view="card" id="viewCard">📋 卡片</button>
+        <button class="view-toggle-btn" data-view="timeline" id="viewTimeline">⏳ 时光轴</button>
+    </div>
+    <div class="img-size-control">
+        <label>🖼 图片大小</label>
+        <input type="range" id="imgSizeSlider" min="25" max="100" step="5" value="50">
+        <span class="img-size-val" id="imgSizeVal">50%</span>
+    </div>
+    <div id="diaryEntries" style="max-width:640px;margin:0 auto;padding:20px;">
+        <div class="diary-empty"><span class="spinner"></span> 加载中...</div>
+    </div>
+</div>
+
+<!-- 旅游日记动态区域 -->
+<div id="travelSections"></div>
+
+
+<!-- ==================== 倒数日常驻悬浮组件 ==================== -->
+<div class="countdown-widget" id="countdownWidget">
+    <button class="countdown-add-fab" id="countdownAddBtn" title="添加倒数日">+</button>
+</div>
+
+<!-- 倒数日编辑弹窗 -->
+<div class="countdown-modal" id="countdownModal">
+    <div class="countdown-modal-box">
+        <h4 id="modalTitle">添加倒数日</h4>
+        <label>事件名称</label>
+        <input type="text" id="cdTitle" placeholder="例：生日、考试、旅行...">
+        <label>目标日期</label>
+        <input type="date" id="cdDate">
+        <div class="repeat-selector">
+            <label><input type="radio" name="cdRepeat" value="none" checked> 单次</label>
+            <label><input type="radio" name="cdRepeat" value="yearly"> 🔄 每年重复</label>
+        </div>
+        <label>背景图片（可选）</label>
+        <input type="file" id="cdBgFile" accept="image/*" style="margin-bottom:14px;">
+        <input type="hidden" id="cdBg">
+        <div class="countdown-modal-btns">
+            <button class="cancel-btn" id="cdCancel">取消</button>
+            <button class="save-btn" id="cdSave">保存</button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== 回到顶部 ==================== -->
+<button class="back-to-top" id="backToTop" title="回到顶部">↑</button>
+
+<script src="/js/common.js"></script>
+<script>
+// 平滑滚动导航（静态链接）
+document.querySelectorAll('.navbar a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) target.scrollIntoView({ behavior: 'smooth' });
+    });
+});
+
+// ==================== 主题切换 ====================
+const themeToggleBtn = document.getElementById('themeToggle');
+function updateThemeIcon() {
+    themeToggleBtn.textContent = getTheme() === 'dark' ? '☀️' : '🌙';
+}
+updateThemeIcon();
+themeToggleBtn.addEventListener('click', () => {
+    toggleTheme();
+    updateThemeIcon();
+});
+
+// ==================== 统计面板 ====================
+let statsYear = new Date().getFullYear();
+let statsMonth = new Date().getMonth() + 1;
+
+// 折叠/展开
+document.getElementById('statsHeader').addEventListener('click', () => {
+    const body = document.getElementById('statsBody');
+    const arrow = document.getElementById('statsArrow');
+    const isOpen = body.classList.toggle('open');
+    arrow.classList.toggle('open', isOpen);
+    if (isOpen) loadStats();
+});
+
+// 年月导航
+document.getElementById('statsYMPrev').addEventListener('click', (e) => {
+    e.stopPropagation();
+    statsMonth--;
+    if (statsMonth < 1) { statsMonth = 12; statsYear--; }
+    loadStats();
+});
+document.getElementById('statsYMNext').addEventListener('click', (e) => {
+    e.stopPropagation();
+    statsMonth++;
+    if (statsMonth > 12) { statsMonth = 1; statsYear++; }
+    loadStats();
+});
+
+async function loadStats() {
+    document.getElementById('statsYMLabel').textContent = statsYear + '年' + statsMonth + '月';
+    try {
+        const data = await apiFetch('/api/stats?year=' + statsYear + '&month=' + statsMonth);
+        renderStatsGrid(data);
+        renderStatsChart(data.dailyCounts);
+    } catch (e) {
+        console.error('统计加载失败:', e);
+    }
+}
+
+function renderStatsGrid(data) {
+    const grid = document.getElementById('statsGrid');
+    grid.innerHTML =
+        '<div class="stats-item"><div class="stats-item-num">' + data.total + '</div><div class="stats-item-label">本月篇数</div></div>'
+        + '<div class="stats-item"><div class="stats-item-num">' + data.travelCount + '</div><div class="stats-item-label">旅行篇数</div></div>'
+        + '<div class="stats-item"><div class="stats-item-num">' + data.cityCount + '</div><div class="stats-item-label">去过的城市</div></div>'
+        + '<div class="stats-item"><div class="stats-item-num">' + data.imageCount + '</div><div class="stats-item-label">图片总数</div></div>'
+        + '<div class="stats-item"><div class="stats-item-num">' + data.streak + '</div><div class="stats-item-label">连续打卡</div></div>'
+        + '<div class="stats-item"><div class="stats-item-num">' + data.yearCityCount + '</div><div class="stats-item-label">全年城市</div></div>';
+}
+
+function renderStatsChart(dailyCounts) {
+    const canvas = document.getElementById('statsChart');
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.clientWidth;
+    const h = 160;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, w, h);
+
+    if (!dailyCounts || !dailyCounts.length) return;
+
+    const maxCount = Math.max(...dailyCounts.map(d => d.count), 1);
+    const barW = Math.max(4, (w - 40) / dailyCounts.length - 2);
+    const chartH = h - 30;
+    const startX = 20;
+
+    // 背景网格线
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) {
+        const y = 10 + (chartH / 4) * i;
+        ctx.beginPath();
+        ctx.moveTo(startX, y);
+        ctx.lineTo(w - 10, y);
+        ctx.stroke();
+    }
+
+    // 柱状图
+    dailyCounts.forEach((d, i) => {
+        const x = startX + i * ((w - 40) / dailyCounts.length);
+        const barH = d.count > 0 ? Math.max(4, (d.count / maxCount) * (chartH - 10)) : 0;
+        const y = chartH - barH + 10;
+
+        // 渐变柱子
+        const grad = ctx.createLinearGradient(x, y, x, chartH + 10);
+        grad.addColorStop(0, '#667eea');
+        grad.addColorStop(1, '#764ba2');
+        ctx.fillStyle = d.count > 0 ? grad : 'rgba(255,255,255,0.04)';
+        ctx.beginPath();
+        if (ctx.roundRect) {
+            ctx.roundRect(x, y, barW, barH, 2);
+        } else {
+            ctx.rect(x, y, barW, barH);
+        }
+        ctx.fill();
+
+        // 日期标签（每隔几天显示）
+        if (dailyCounts.length <= 15 || i % 3 === 0) {
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.font = '10px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(d.day, x + barW / 2, h - 4);
+        }
+    });
+}
+
+// ========== 日记分页加载（仅日常） ==========
+let currentPage = 1;
+const pageSize = 10;
+
+function renderDiaryCard(e) {
+    const imgs = e.images || (e.image ? [e.image] : []);
+    const thumbs = e.thumbImages || imgs;
+    // 分类标签
+    let tags = '';
+    if (e.mode === 'travel') {
+        tags = '<span class="diary-tag tag-travel">旅游</span>';
+    } else {
+        tags = '<span class="diary-tag tag-daily">日常</span>';
+    }
+    if (e.mood) {
+        tags += '<span class="diary-tag tag-mood">' + escHtml(e.mood) + '</span>';
+    }
+    return '<div class="diary-card">'
+      + '<div class="diary-time">' + formatTime(e.createdAt) + '</div>'
+      + tags
+      + (e.mode === 'travel' && e.location ? '<div class="location-tag">' + escHtml(e.location) + '</div>' : '')
+      + (e.text ? '<div class="diary-text">' + escHtml(e.text) + '</div>' : '')
+      + (imgs.length ? '<div class="diary-images">' + imgs.map((img, i) =>
+          '<img src="/uploads/' + (thumbs[i] || img) + '" onclick="showLightbox(\'/uploads/' + img + '\')">'
+        ).join('') + '</div>' : '')
+      + '<a href="detail.html?id=' + e.id + '" class="poster-btn">🖼 生成海报</a>'
+      + '</div>';
+}
+
+let currentView = 'card'; // 'card' or 'timeline'
+const VIEW_STORAGE_KEY = 'diaryViewMode';
+
+// 视图切换（含 body 类名联动 + localStorage 持久化）
+function switchView(view) {
+    currentView = view;
+    localStorage.setItem(VIEW_STORAGE_KEY, view);
+    document.getElementById('viewCard').classList.toggle('active', view === 'card');
+    document.getElementById('viewTimeline').classList.toggle('active', view === 'timeline');
+    document.body.classList.toggle('timeline-active', view === 'timeline');
+    loadDiaryEntries(1);
+}
+
+document.getElementById('viewCard').addEventListener('click', () => switchView('card'));
+document.getElementById('viewTimeline').addEventListener('click', () => switchView('timeline'));
+
+// ==================== 图片大小调控 ====================
+const IMG_SIZE_KEY = 'diaryImgSize';
+const imgSizeSlider = document.getElementById('imgSizeSlider');
+const imgSizeVal = document.getElementById('imgSizeVal');
+
+function applyImgSize(pct) {
+    document.documentElement.style.setProperty('--diary-img-max-w', pct + '%');
+    imgSizeVal.textContent = pct + '%';
+}
+
+// 初始化
+const savedImgSize = parseInt(localStorage.getItem(IMG_SIZE_KEY)) || 50;
+imgSizeSlider.value = savedImgSize;
+applyImgSize(savedImgSize);
+
+imgSizeSlider.addEventListener('input', () => {
+    const val = parseInt(imgSizeSlider.value);
+    localStorage.setItem(IMG_SIZE_KEY, val);
+    applyImgSize(val);
+});
+
+function renderDiaryEntries(data) {
+    const container = document.getElementById('diaryEntries');
+    // 只显示日常日记
+    const allEntries = data.entries || data;
+    const entries = allEntries.filter(e => e.mode !== 'travel');
+    if (!entries.length) {
+        container.innerHTML = '<div class="diary-empty">还没有日常日记，<a href="diary.html">去写一篇</a>吧~</div>';
+        return;
+    }
+
+    if (currentView === 'timeline') {
+        renderTimelineView(entries, container, data);
+    } else {
+        renderCardView(entries, container, data);
+    }
+}
+
+function renderCardView(entries, container, data) {
+    let html = entries.map(renderDiaryCard).join('');
+
+    // 分页控件
+    if (data.pages && data.pages > 1) {
+        html += '<div style="text-align:center;padding:16px 0;">';
+        if (data.page > 1) {
+            html += '<button class="load-more-btn" onclick="loadDiaryEntries(' + (data.page - 1) + ')">上一页</button>';
+        }
+        html += '<span style="color:rgba(255,255,255,0.5);font-size:13px;margin:0 12px;">' + data.page + ' / ' + data.pages + '</span>';
+        if (data.page < data.pages) {
+            html += '<button class="load-more-btn" onclick="loadDiaryEntries(' + (data.page + 1) + ')">下一页</button>';
+        }
+        html += '</div>';
+    }
+
+    container.innerHTML = html;
+}
+
+function renderTimelineView(entries, container, data) {
+    // 按日期分组
+    const groups = {};
+    entries.forEach(e => {
+        const d = new Date(e.createdAt);
+        const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(e);
+    });
+
+    const sortedKeys = Object.keys(groups).sort((a, b) => a.localeCompare(b));
+
+    let html = '<div class="timeline-container">';
+    sortedKeys.forEach(dateKey => {
+        const d = new Date(dateKey + 'T00:00:00');
+        const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+        const label = d.getFullYear() + '年' + monthNames[d.getMonth()] + d.getDate() + '日';
+
+        html += '<div class="timeline-date-group">';
+        html += '<div class="timeline-date-dot"></div>';
+        html += '<div class="timeline-date-label">' + label + '</div>';
+        groups[dateKey].forEach(e => {
+            html += '<div class="timeline-entry">' + renderDiaryCard(e) + '</div>';
+        });
+        html += '</div>';
+    });
+    html += '</div>';
+
+    // 分页控件
+    if (data.pages && data.pages > 1) {
+        html += '<div style="text-align:center;padding:16px 0;">';
+        if (data.page > 1) {
+            html += '<button class="load-more-btn" onclick="loadDiaryEntries(' + (data.page - 1) + ')">上一页</button>';
+        }
+        html += '<span style="color:rgba(255,255,255,0.5);font-size:13px;margin:0 12px;">' + data.page + ' / ' + data.pages + '</span>';
+        if (data.page < data.pages) {
+            html += '<button class="load-more-btn" onclick="loadDiaryEntries(' + (data.page + 1) + ')">下一页</button>';
+        }
+        html += '</div>';
+    }
+
+    container.innerHTML = html;
+}
+
+async function loadDiaryEntries(page) {
+    if (page) currentPage = page;
+    try {
+        const data = await apiFetch('/api/entries?page=' + currentPage + '&limit=' + pageSize);
+        renderDiaryEntries(data);
+    } catch(e) {
+        console.error('日记加载失败:', e);
+        document.getElementById('diaryEntries').innerHTML =
+          '<div style="color:#ff6b6b;text-align:center;padding:40px 0;font-size:14px;">'
+          + '日记加载失败！<br><span style="color:rgba(255,255,255,0.5);font-size:12px;">' + e.message + '</span></div>';
+    }
+}
+
+// ========== 旅游日记动态板块 ==========
+async function loadTravelSections() {
+    try {
+        const groups = await apiFetch('/api/travel-locations');
+        const navContainer = document.getElementById('travelNavLinks');
+        const sectionContainer = document.getElementById('travelSections');
+
+        if (!groups.length) {
+            navContainer.innerHTML = '';
+            sectionContainer.innerHTML = '';
+            return;
+        }
+
+        // 生成导航链接
+        navContainer.innerHTML = groups.map((g, i) =>
+            '<a href="#travel-' + i + '">' + escHtml(g.location) + '</a>'
+        ).join('');
+
+        // 生成旅游板块
+        sectionContainer.innerHTML = groups.map((g, i) =>
+            '<div id="travel-' + i + '" class="section" style="height:auto;min-height:40vh;">'
+            + '<h3 class="travel-section-title">' + escHtml(g.location) + '</h3>'
+            + '<div style="max-width:640px;margin:0 auto;padding:0 20px;">'
+            + g.entries.map(renderDiaryCard).join('')
+            + '</div></div>'
+        ).join('');
+    } catch (e) {
+        console.error('旅游日记加载失败:', e);
+    }
+}
+
+// 绑定导航栏平滑滚动（包括动态生成的链接）
+function bindSmoothScroll() {
+    document.querySelectorAll('.navbar a[href^="#"]').forEach(anchor => {
+        if (anchor.dataset.bound) return;
+        anchor.dataset.bound = 'true';
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) target.scrollIntoView({ behavior: 'smooth' });
+        });
+    });
+}
+
+// ==================== 倒数日面板逻辑 ====================
+const CD_STORAGE_KEY = 'countdown_events';
+
+function loadCountdowns() {
+    try {
+        return JSON.parse(localStorage.getItem(CD_STORAGE_KEY)) || [];
+    } catch { return []; }
+}
+
+function saveCountdowns(list) {
+    localStorage.setItem(CD_STORAGE_KEY, JSON.stringify(list));
+}
+
+function calcDays(targetDate) {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const target = new Date(targetDate);
+    target.setHours(0, 0, 0, 0);
+    return Math.ceil((target - now) / (1000 * 60 * 60 * 24));
+}
+
+function formatDate(dateStr) {
+    const d = new Date(dateStr);
+    const pad = n => String(n).padStart(2, '0');
+    return d.getFullYear() + '.' + pad(d.getMonth() + 1) + '.' + pad(d.getDate());
+}
+
+function renderCountdowns() {
+    const list = loadCountdowns();
+    const widget = document.getElementById('countdownWidget');
+
+    // 保留添加按钮，清除旧卡片
+    widget.querySelectorAll('.countdown-card').forEach(el => el.remove());
+
+    if (!list.length) return;
+
+    // 按日期排序（最近的在前）
+    list.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    const addBtn = document.getElementById('countdownAddBtn');
+
+    list.forEach((item, i) => {
+        let displayDate = item.date;
+        const isYearly = item.repeat === 'yearly';
+
+        // 每年重复：计算最近的下一个纪念日
+        if (isYearly) {
+            const now = new Date();
+            now.setHours(0, 0, 0, 0);
+            const orig = new Date(item.date);
+            let thisYear = new Date(now.getFullYear(), orig.getMonth(), orig.getDate());
+            if (thisYear < now) {
+                thisYear = new Date(now.getFullYear() + 1, orig.getMonth(), orig.getDate());
+            }
+            displayDate = thisYear.toISOString().split('T')[0];
+        }
+
+        const days = calcDays(displayDate);
+        let daysClass = '';
+        let daysNum = '';
+        let unitText = '';
+        let cardExtraClass = '';
+        if (days === 0) {
+            daysClass = 'today';
+            daysNum = '🎂';
+            unitText = '今天';
+            cardExtraClass = 'today-special';
+        } else if (days > 0) {
+            daysClass = days <= 7 ? 'soon' : '';
+            daysNum = days;
+            unitText = '天后';
+            if (days <= 7) cardExtraClass = 'highlight-soon';
+        } else {
+            daysClass = 'past';
+            daysNum = Math.abs(days);
+            unitText = '天前';
+        }
+
+        const bgStyle = item.bg
+            ? 'background-image:url(\'' + item.bg.replace(/'/g, "\\'") + '\')'
+            : '';
+
+        const card = document.createElement('div');
+        card.className = 'countdown-card' + (cardExtraClass ? ' ' + cardExtraClass : '');
+        card.innerHTML = (item.bg ? '<div class="countdown-card-bg" style="' + bgStyle + '"></div>' : '')
+            + '<div class="countdown-card-actions">'
+            + '<button onclick="editCountdown(' + i + ')" title="编辑">&#9998;</button>'
+            + '<button class="del-btn" onclick="deleteCountdown(' + i + ')" title="删除">&times;</button>'
+            + '</div>'
+            + '<div class="countdown-card-content">'
+            + '<div class="countdown-card-left">'
+            + '<div class="countdown-card-days ' + daysClass + '">' + daysNum + '</div>'
+            + '<div class="countdown-card-unit">' + unitText + '</div>'
+            + '</div>'
+            + '<div class="countdown-card-right">'
+            + '<div class="countdown-card-title">' + escHtml(item.title)
+            + (isYearly ? '<span class="repeat-badge">每年</span>' : '')
+            + '</div>'
+            + '<div class="countdown-card-date">' + formatDate(displayDate) + '</div>'
+            + '</div></div>';
+
+        widget.insertBefore(card, addBtn);
+    });
+}
+
+// 编辑弹窗
+let editingIndex = -1;
+
+function openCountdownModal(index) {
+    editingIndex = index;
+    const modal = document.getElementById('countdownModal');
+    const titleEl = document.getElementById('modalTitle');
+    const cdTitle = document.getElementById('cdTitle');
+    const cdDate = document.getElementById('cdDate');
+    const cdBg = document.getElementById('cdBg');
+    const cdBgFile = document.getElementById('cdBgFile');
+    const repeatRadios = document.querySelectorAll('input[name="cdRepeat"]');
+
+    // 清空文件选择
+    cdBgFile.value = '';
+
+    if (index >= 0) {
+        const list = loadCountdowns();
+        list.sort((a, b) => new Date(a.date) - new Date(b.date));
+        const item = list[index];
+        titleEl.textContent = '编辑倒数日';
+        cdTitle.value = item.title;
+        cdDate.value = item.date;
+        cdBg.value = item.bg || '';
+        // 设置重复类型
+        const repeat = item.repeat || 'none';
+        repeatRadios.forEach(r => r.checked = r.value === repeat);
+    } else {
+        titleEl.textContent = '添加倒数日';
+        cdTitle.value = '';
+        cdDate.value = '';
+        cdBg.value = '';
+        repeatRadios.forEach(r => r.checked = r.value === 'none');
+    }
+
+    modal.classList.add('show');
+    cdTitle.focus();
+}
+
+function closeCountdownModal() {
+    document.getElementById('countdownModal').classList.remove('show');
+    editingIndex = -1;
+}
+
+async function saveCountdown() {
+    const title = document.getElementById('cdTitle').value.trim();
+    const date = document.getElementById('cdDate').value;
+    const fileInput = document.getElementById('cdBgFile');
+    const bgHidden = document.getElementById('cdBg').value.trim();
+    const repeat = document.querySelector('input[name="cdRepeat"]:checked').value;
+
+    if (!title) { alert('请输入事件名称'); return; }
+    if (!date) { alert('请选择目标日期'); return; }
+
+    let bg = bgHidden;
+
+    // 如果选择了新文件，先上传
+    if (fileInput.files.length > 0) {
+        const formData = new FormData();
+        formData.append('image', fileInput.files[0]);
+        try {
+            const res = await fetch('/api/upload-countdown-bg', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || '上传失败');
+            bg = data.path;
+        } catch (e) {
+            alert('图片上传失败：' + e.message);
+            return;
+        }
+    }
+
+    let list = loadCountdowns();
+    const sorted = [...list].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    if (editingIndex >= 0) {
+        const originalItem = sorted[editingIndex];
+        const origIdx = list.indexOf(originalItem);
+        list[origIdx] = { title, date, bg, repeat };
+    } else {
+        list.push({ title, date, bg, repeat });
+    }
+
+    saveCountdowns(list);
+    closeCountdownModal();
+    renderCountdowns();
+}
+
+function editCountdown(sortedIndex) {
+    openCountdownModal(sortedIndex);
+}
+
+function deleteCountdown(sortedIndex) {
+    if (!confirm('确定删除这个倒数日？')) return;
+    let list = loadCountdowns();
+    list.sort((a, b) => new Date(a.date) - new Date(b.date));
+    list.splice(sortedIndex, 1);
+    saveCountdowns(list);
+    renderCountdowns();
+}
+
+// 倒数日添加按钮
+document.getElementById('countdownAddBtn').addEventListener('click', () => openCountdownModal(-1));
+document.getElementById('cdCancel').addEventListener('click', closeCountdownModal);
+document.getElementById('cdSave').addEventListener('click', saveCountdown);
+
+// 弹窗点击背景关闭
+document.getElementById('countdownModal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeCountdownModal();
+});
+
+// ==================== 回到顶部 ====================
+const backToTopBtn = document.getElementById('backToTop');
+window.addEventListener('scroll', () => {
+    if (window.scrollY > 300) {
+        backToTopBtn.classList.add('visible');
+    } else {
+        backToTopBtn.classList.remove('visible');
+    }
+}, { passive: true });
+backToTopBtn.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+// ==================== 相恋天数 ====================
+function calcLoveDays() {
+    try {
+        const startDate = new Date(2023, 8, 1); // 月份从0开始，8表示9月
+        startDate.setHours(0, 0, 0, 0);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const diff = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+        const loveDaysNumEl = document.getElementById('loveDaysNum');
+        if (loveDaysNumEl) {
+            loveDaysNumEl.textContent = diff;
+        }
+    } catch (error) {
+        console.error('计算相恋天数出错:', error);
+    }
+}
+
+// ==================== 星空动画 ====================
+function initStarSky() {
+    const canvas = document.getElementById('starCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    let stars = [];
+    let animId = null;
+
+    function resize() {
+        canvas.width = window.innerWidth * dpr;
+        canvas.height = window.innerHeight * dpr;
+        ctx.scale(dpr, dpr);
+    }
+
+    function createStars() {
+        const count = Math.floor(Math.min(180, (window.innerWidth * window.innerHeight) / 6000));
+        stars = [];
+        for (let i = 0; i < count; i++) {
+            stars.push({
+                x: Math.random() * window.innerWidth,
+                y: Math.random() * window.innerHeight,
+                r: 0.4 + Math.random() * 2.2,
+                baseAlpha: 0.25 + Math.random() * 0.75,
+                phase: Math.random() * Math.PI * 2,
+                speed: 0.003 + Math.random() * 0.008,
+                dx: (Math.random() - 0.5) * 0.08,
+                dy: (Math.random() - 0.5) * 0.06
+            });
+        }
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+        const t = Date.now() * 0.001;
+        for (const s of stars) {
+            // 漂移
+            s.x += s.dx;
+            s.y += s.dy;
+            if (s.x < -5) s.x = window.innerWidth + 5;
+            if (s.x > window.innerWidth + 5) s.x = -5;
+            if (s.y < -5) s.y = window.innerHeight + 5;
+            if (s.y > window.innerHeight + 5) s.y = -5;
+
+            // 闪烁
+            const alpha = s.baseAlpha * (0.5 + 0.5 * Math.sin(t * s.speed * 60 + s.phase));
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255,255,255,' + alpha.toFixed(3) + ')';
+            ctx.fill();
+        }
+        animId = requestAnimationFrame(draw);
+    }
+
+    resize();
+    createStars();
+    draw();
+
+    window.addEventListener('resize', () => {
+        resize();
+        createStars();
+    });
+}
+
+// ==================== 初始化 ====================
+document.addEventListener('DOMContentLoaded', () => {
+    calcLoveDays(); // 计算相恋天数
+
+    // 恢复视图状态
+    const savedView = localStorage.getItem(VIEW_STORAGE_KEY);
+    if (savedView === 'timeline') {
+        currentView = 'timeline';
+        document.getElementById('viewTimeline').classList.add('active');
+        document.getElementById('viewCard').classList.remove('active');
+        document.body.classList.add('timeline-active');
+    }
+
+    initStarSky(); // 初始化星空动画
+    loadDiaryEntries(1);
+    loadTravelSections().then(bindSmoothScroll);
+    renderCountdowns();
+});
+
+// SSE 实时更新
+if (typeof EventSource !== 'undefined') {
+    const evtSource = new EventSource('/api/entries/stream');
+    evtSource.onmessage = () => {
+        loadDiaryEntries(currentPage);
+        loadTravelSections().then(bindSmoothScroll);
+    };
+    evtSource.onerror = () => {
+        console.warn('SSE 断开，5 秒后重连...');
+        evtSource.close();
+        setTimeout(() => window.location.reload(), 5000);
+    };
+} else {
+    // 降级：30 秒轮询
+    setInterval(() => loadDiaryEntries(currentPage), 30000);
+}
+
+// 切换标签页时刷新
+document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) loadDiaryEntries(currentPage);
+});
+</script>
+
+</body>
+</html>

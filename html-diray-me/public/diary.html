@@ -1,0 +1,2254 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的日记</title>
+<link rel="stylesheet" href="/css/common.css">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg-page);
+  background-attachment: fixed;
+  min-height: 100vh;
+  color: var(--text-primary);
+}
+
+/* ===== 页面布局 ===== */
+.page-wrapper {
+  max-width: 1380px;
+  margin: 0 auto;
+  padding: 20px;
+  display: grid;
+  grid-template-columns: 230px 1fr 280px;
+  gap: 24px;
+  align-items: start;
+}
+
+/* 顶部导航 */
+.nav-top {
+  grid-column: 1 / -1;
+  text-align: center;
+  margin-bottom: 4px;
+}
+.nav-top a {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+.nav-top a:hover {
+  color: var(--accent);
+  background: rgba(102,126,234,0.06);
+}
+
+/* ===== 侧边栏 ===== */
+.sidebar {
+  position: sticky;
+  top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-self: start;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,0,0,0.08) transparent;
+}
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.08);
+  border-radius: 10px;
+}
+.sidebar-card {
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 16px;
+  padding: 18px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-card);
+}
+.sidebar-card h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 12px;
+  letter-spacing: 0.3px;
+}
+
+/* 迷你日历 */
+.cal-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.cal-nav button {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  transition: opacity 0.15s ease;
+}
+.cal-nav button:hover { opacity: 0.6; }
+.cal-month-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.cal-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  text-align: center;
+}
+.cal-day {
+  width: 25px;
+  height: 25px;
+  line-height: 25px;
+  margin: 0 auto;
+  font-size: 12px;
+  color: var(--text-secondary);
+  border-radius: 50%;
+  position: relative;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.cal-day.has-entry { color: var(--accent); font-weight: 600; }
+.cal-day.has-entry::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  background: var(--accent);
+  border-radius: 50%;
+}
+.cal-day.is-today {
+  background: var(--accent-gradient);
+  color: #fff;
+  font-weight: 600;
+}
+.cal-day.is-today::after { display: none; }
+.cal-day.other-month { color: #ddd; }
+.cal-day.other-month.has-entry { color: #b8c4f0; }
+.cal-day.other-month.has-entry::after { background: #b8c4f0; }
+.cal-day:not(.other-month) { cursor: pointer; }
+.cal-day:not(.other-month):hover { background: rgba(102,126,234,0.08); }
+.cal-day.is-today:hover { background: var(--accent-gradient); }
+
+/* 年月标题可点击 */
+.cal-month-label { cursor: pointer; transition: color 0.2s ease, opacity 0.2s ease; }
+.cal-month-label:hover { color: var(--accent); opacity: 0.8; }
+
+/* 分类筛选 */
+.filter-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(0,0,0,0.03);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+[data-theme="dark"] .filter-btn {
+  background: rgba(255,255,255,0.06);
+}
+.filter-btn:hover {
+  background: rgba(102,126,234,0.06);
+  color: var(--text-primary);
+}
+.filter-btn.active {
+  background: var(--accent-gradient);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(102,126,234,0.25);
+}
+.filter-count {
+  margin-left: auto;
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+/* 月度统计 */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.stat-item {
+  text-align: center;
+  padding: 10px 4px;
+  background: rgba(102,126,234,0.04);
+  border-radius: 10px;
+  transition: background 0.2s ease;
+}
+.stat-item:hover { background: rgba(102,126,234,0.08); }
+.stat-num {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1.2;
+}
+.stat-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ===== 主内容区 ===== */
+.main-content {
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+/* 发布框 */
+.post-box {
+  background: var(--bg-card);
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 28px;
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--border-color);
+}
+.post-box textarea {
+  width: 100%;
+  border: none;
+  resize: none;
+  font-size: 15px;
+  line-height: 1.7;
+  outline: none;
+  min-height: 80px;
+  font-family: inherit;
+  background: var(--bg-glass);
+  border-radius: 12px;
+  padding: 12px;
+  color: var(--text-primary);
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+.post-box textarea:focus {
+  background: var(--bg-glass-strong);
+  box-shadow: inset 0 0 0 2px rgba(102,126,234,0.12);
+}
+.post-box textarea::placeholder { color: var(--text-muted); }
+
+/* 发布操作栏 */
+.post-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+  border-top: 1px solid var(--border-light);
+  padding-top: 14px;
+}
+.post-actions label {
+  cursor: pointer;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border: 1.5px dashed rgba(102,126,234,0.25);
+  border-radius: 12px;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.post-actions label:hover {
+  border-color: var(--accent);
+  background: rgba(102,126,234,0.04);
+}
+.post-actions input[type="file"] { display: none; }
+
+/* 发布按钮 */
+.btn-post {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  border: none;
+  padding: 9px 28px;
+  border-radius: 24px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 2px 10px rgba(102,126,234,0.25);
+}
+.btn-post:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(102,126,234,0.4);
+}
+.btn-post:active { transform: translateY(0); }
+.btn-post:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* 模式选择 */
+.mode-selector {
+  display: flex;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-light);
+  font-size: 14px;
+}
+.mode-selector label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 5px 14px;
+  border-radius: 18px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.mode-selector label:hover {
+  background: rgba(102,126,234,0.06);
+  color: var(--text-primary);
+}
+.mode-selector input[type="radio"] { accent-color: var(--accent); }
+
+/* 地点输入 */
+.location-wrap {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.3s ease, opacity 0.3s ease, margin 0.3s ease;
+  margin-top: 0;
+}
+.location-wrap.show {
+  max-height: 60px;
+  opacity: 1;
+  margin-top: 12px;
+}
+.location-wrap input {
+  width: 100%;
+  border: 1.5px solid var(--border-light);
+  border-radius: 10px;
+  padding: 9px 14px;
+  font-size: 14px;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  background: var(--bg-glass);
+  color: var(--text-primary);
+}
+.location-wrap input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+  background: var(--bg-glass-strong);
+}
+.location-wrap input::placeholder { color: var(--text-muted); }
+
+/* 图片预览 */
+.preview-area {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.preview-area .thumb {
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+.preview-area .thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+}
+.preview-area .thumb .rm {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 12px;
+  cursor: pointer;
+  line-height: 20px;
+  text-align: center;
+  transition: background 0.15s ease;
+}
+.preview-area .thumb .rm:hover { background: rgba(231,76,60,0.85); }
+
+/* 日记卡片 */
+.entry-card {
+  background: var(--bg-card);
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--border-color);
+  position: relative;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  overflow: hidden;
+}
+.entry-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-hover);
+}
+.entry-card .time {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  letter-spacing: 0.3px;
+}
+.entry-card .text {
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+}
+.entry-card .img-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+  justify-content: center;
+}
+.entry-card .img-grid img {
+  max-width: calc(50% - 4px);
+  max-width: min(calc(50% - 4px), 100%);
+  height: auto;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+/* 单张图片居中、限制最大宽度 */
+.entry-card .img-grid img:only-child {
+  max-width: min(480px, 100%);
+  display: block;
+  margin: 0 auto;
+}
+.entry-card .img-grid img:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+}
+.entry-card .location-tag {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background: #e67e22;
+  padding: 3px 12px;
+  border-radius: 12px;
+  margin-bottom: 8px;
+  border: 1px solid #d35400;
+}
+.entry-card .btn-del {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 18px;
+  transition: color 0.2s ease, transform 0.2s ease;
+  line-height: 1;
+}
+.entry-card .btn-del:hover {
+  color: #e74c3c;
+  transform: scale(1.1);
+}
+.entry-card .edit-link {
+  font-size: 12px;
+  color: var(--text-muted);
+  transition: color 0.2s ease;
+}
+.entry-card .edit-link:hover { color: var(--accent); }
+
+.empty-msg {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 48px 0;
+  font-size: 14px;
+}
+
+/* 编辑模态框 */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 9998;
+  justify-content: center;
+  align-items: center;
+}
+.modal-box {
+  background: var(--bg-glass-strong);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 20px;
+  padding: 28px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.12);
+  border: 1px solid var(--border-color);
+}
+.modal-box textarea {
+  width: 100%;
+  border: 1.5px solid var(--border-light);
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 15px;
+  line-height: 1.7;
+  resize: vertical;
+  min-height: 100px;
+  outline: none;
+  font-family: inherit;
+  background: var(--bg-glass);
+  color: var(--text-primary);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.modal-box textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+.modal-actions button {
+  padding: 9px 22px;
+  border-radius: 24px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+.btn-cancel {
+  background: #f0f1f3;
+  color: #666;
+}
+.btn-cancel:hover {
+  background: #e4e5e8;
+  color: #444;
+}
+.btn-save {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(102,126,234,0.25);
+}
+.btn-save:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(102,126,234,0.4);
+}
+
+/* 提示弹窗（无日记/删除成功） */
+.tip-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  z-index: 9998;
+  justify-content: center;
+  align-items: center;
+}
+.tip-box {
+  background: var(--bg-glass-strong);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 20px;
+  padding: 28px 32px 22px;
+  width: auto;
+  max-width: 90%;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.12);
+  text-align: center;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid var(--border-color);
+}
+.tip-box .tip-text {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+  white-space: nowrap;
+}
+.tip-btns {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+.tip-btns .tip-btn {
+  display: inline-block;
+  padding: 9px 24px;
+  border-radius: 24px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.tip-btns .tip-btn-close {
+  background: #f0f1f3;
+  color: #666;
+}
+.tip-btns .tip-btn-close:hover { background: #e4e5e8; color: #444; }
+.tip-btns .tip-btn-add {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(102,126,234,0.25);
+}
+.tip-btns .tip-btn-add:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(102,126,234,0.4);
+}
+
+/* 补日记弹窗 */
+.sup-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  z-index: 9998;
+  justify-content: center;
+  align-items: center;
+}
+.sup-box {
+  background: var(--bg-glass-strong);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 20px;
+  padding: 28px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.12);
+  border: 1px solid var(--border-color);
+}
+.sup-box .sup-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 16px;
+  text-align: center;
+}
+.sup-box textarea {
+  width: 100%;
+  border: 1.5px solid var(--border-light);
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 15px;
+  line-height: 1.7;
+  resize: vertical;
+  min-height: 100px;
+  outline: none;
+  font-family: inherit;
+  background: var(--bg-glass);
+  color: var(--text-primary);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.sup-box textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+}
+.sup-box .sup-img-area {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.sup-box .sup-img-area .thumb {
+  position: relative;
+  width: 72px;
+  height: 72px;
+}
+.sup-box .sup-img-area .thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+}
+.sup-box .sup-img-area .thumb .rm {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 12px;
+  cursor: pointer;
+  line-height: 20px;
+  text-align: center;
+}
+.sup-box .sup-img-area .thumb .rm:hover { background: rgba(231,76,60,0.85); }
+.sup-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+  border-top: 1px solid rgba(0,0,0,0.05);
+  padding-top: 14px;
+}
+.sup-actions label {
+  cursor: pointer;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border: 1.5px dashed rgba(102,126,234,0.25);
+  border-radius: 12px;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.sup-actions label:hover {
+  border-color: var(--accent);
+  background: rgba(102,126,234,0.04);
+}
+.sup-actions input[type="file"] { display: none; }
+.sup-btns {
+  display: flex;
+  gap: 10px;
+}
+
+/* 编辑弹窗-图片区域 */
+.edit-img-area {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.edit-img-area .thumb {
+  position: relative;
+  width: 72px;
+  height: 72px;
+}
+.edit-img-area .thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+}
+.edit-img-area .thumb .rm {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 12px;
+  cursor: pointer;
+  line-height: 20px;
+  text-align: center;
+}
+.edit-img-area .thumb .rm:hover { background: rgba(231,76,60,0.85); }
+.edit-add-img {
+  cursor: pointer;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border: 1.5px dashed rgba(102,126,234,0.25);
+  border-radius: 12px;
+  transition: border-color 0.2s ease, background 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.edit-add-img:hover {
+  border-color: var(--accent);
+  background: rgba(102,126,234,0.04);
+}
+#editTimeInput:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+  background: var(--bg-glass-strong);
+}
+
+/* 删除确认弹窗 */
+.del-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  z-index: 9998;
+  justify-content: center;
+  align-items: center;
+}
+.del-box {
+  background: var(--bg-glass-strong);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 20px;
+  padding: 32px 28px 24px;
+  width: 90%;
+  max-width: 420px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.12);
+  text-align: center;
+  border: 1px solid var(--border-color);
+}
+.del-box .del-text {
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+.del-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+}
+.del-actions .btn-del-cancel,
+.del-actions .btn-del-unsure {
+  padding: 10px 26px;
+  border-radius: 24px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+.del-actions .btn-del-cancel {
+  background: #f0f1f3;
+  color: #666;
+}
+.del-actions .btn-del-cancel:hover {
+  background: #e4e5e8;
+  color: #444;
+}
+.del-actions .btn-del-unsure {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(102,126,234,0.25);
+}
+.del-actions .btn-del-unsure:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(102,126,234,0.4);
+}
+.del-actions .btn-del-confirm {
+  padding: 6px 14px;
+  border-radius: 16px;
+  border: 1.5px solid rgba(0,0,0,0.1);
+  background: #fafafa;
+  color: #aaa;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+.del-actions .btn-del-confirm:hover {
+  background: #f0f0f0;
+  color: #888;
+  border-color: rgba(0,0,0,0.15);
+}
+
+/* 成功提示弹窗（点击任意位置关闭） */
+.success-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.25);
+  z-index: 9999;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+.success-box {
+  background: var(--bg-glass-strong);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 20px;
+  padding: 32px 28px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.12);
+  text-align: center;
+  pointer-events: none;
+  border: 1px solid var(--border-color);
+}
+.success-box .success-icon {
+  font-size: 36px;
+  margin-bottom: 12px;
+}
+.success-box .success-text {
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--text-secondary);
+}
+
+/* 年月输入弹窗 */
+.ym-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  z-index: 9998;
+  justify-content: center;
+  align-items: center;
+}
+.ym-box {
+  background: var(--bg-glass-strong);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 20px;
+  padding: 28px;
+  width: 90%;
+  max-width: 360px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.12);
+  text-align: center;
+  border: 1px solid var(--border-color);
+}
+.ym-box .ym-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 18px;
+}
+.ym-box .ym-input {
+  width: 100%;
+  border: 1.5px solid var(--border-light);
+  border-radius: 12px;
+  padding: 11px 14px;
+  font-size: 15px;
+  font-family: inherit;
+  text-align: center;
+  outline: none;
+  background: var(--bg-glass);
+  color: var(--text-primary);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.ym-box .ym-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+}
+.ym-box .ym-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 8px;
+  margin-bottom: 18px;
+}
+.ym-box .ym-error {
+  font-size: 12px;
+  color: #e8a0a0;
+  margin-top: 8px;
+  margin-bottom: 14px;
+  min-height: 18px;
+}
+.ym-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+.ym-actions button {
+  padding: 9px 22px;
+  border-radius: 24px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* ===== 3D立体相册 ===== */
+.album-column {
+  position: sticky;
+  top: 20px;
+}
+.album-card {
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 16px;
+  padding: 18px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-card);
+}
+.album-card h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 14px;
+  letter-spacing: 0.3px;
+  text-align: center;
+}
+.cube-stage {
+  width: 200px;
+  height: 200px;
+  margin: 0 auto 16px;
+  perspective: 800px;
+  transition: transform 0.5s ease;
+}
+.cube-stage:hover {
+  transform: scale(1.12);
+}
+.cube-wrap {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  animation: cubeSpin 18s linear infinite;
+}
+.cube-stage:hover .cube-wrap {
+  animation-play-state: paused;
+}
+@keyframes cubeSpin {
+  from { transform: rotateY(0deg) rotateX(-8deg); }
+  to   { transform: rotateY(360deg) rotateX(-8deg); }
+}
+.cube-face {
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  backface-visibility: hidden;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.6);
+  box-shadow: inset 0 0 40px rgba(0,0,0,0.05), 0 0 15px rgba(0,0,0,0.04);
+  transition: box-shadow 0.3s ease;
+}
+.cube-face::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 50%, rgba(0,0,0,0.03) 100%);
+  pointer-events: none;
+  border-radius: 12px;
+}
+.cube-face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+/* 6个面定位 */
+.cube-face:nth-child(1) { transform: rotateY(  0deg) translateZ(100px); }
+.cube-face:nth-child(2) { transform: rotateY( 90deg) translateZ(100px); }
+.cube-face:nth-child(3) { transform: rotateY(180deg) translateZ(100px); }
+.cube-face:nth-child(4) { transform: rotateY(270deg) translateZ(100px); }
+.cube-face:nth-child(5) { transform: rotateX( 90deg) translateZ(100px); }
+.cube-face:nth-child(6) { transform: rotateX(-90deg) translateZ(100px); }
+
+/* 光影层 */
+.cube-shadow {
+  width: 140px;
+  height: 20px;
+  margin: 8px auto 0;
+  background: radial-gradient(ellipse, rgba(102,126,234,0.12) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+/* 海报按钮（diary卡片内） */
+.entry-card .poster-link {
+  display: inline-block;
+  font-size: 12px;
+  color: #e67e22;
+  text-decoration: none;
+  padding: 3px 10px;
+  border: 1px solid rgba(230,126,34,0.25);
+  border-radius: 12px;
+  margin-top: 6px;
+  transition: all 0.2s ease;
+}
+.entry-card .poster-link:hover {
+  background: rgba(230,126,34,0.1);
+  transform: translateY(-1px);
+}
+
+/* 底部圆点指示器 */
+.album-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.album-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.1);
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+.album-dot:hover { background: rgba(102,126,234,0.4); transform: scale(1.3); }
+.album-dot.active {
+  background: var(--accent-gradient);
+  transform: scale(1.2);
+}
+.album-info {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+.album-empty {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 40px 0;
+}
+
+/* 分页按钮 */
+.page-btn {
+  margin: 0 4px;
+  padding: 7px 18px;
+  border: 1.5px solid var(--border-light);
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+.page-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(102,126,234,0.04);
+}
+
+/* 页脚 */
+.page-footer {
+  text-align: center;
+  padding: 32px 20px 16px;
+  margin-top: 8px;
+}
+.footer-divider {
+  width: 48px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(102,126,234,0.25), transparent);
+  margin: 0 auto 14px;
+  border-radius: 1px;
+}
+.footer-text {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.8;
+  font-style: italic;
+}
+
+/* 移动端侧边栏切换按钮 */
+.sidebar-toggle {
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(102,126,234,0.35);
+  z-index: 1001;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.sidebar-toggle:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(102,126,234,0.45);
+}
+
+/* ===== 中等屏幕适配 ===== */
+@media (max-width: 1100px) {
+  .page-wrapper {
+    grid-template-columns: 230px 1fr;
+  }
+  .album-column { display: none; }
+}
+
+/* ===== 移动端适配 ===== */
+@media (max-width: 768px) {
+  .page-wrapper {
+    grid-template-columns: 1fr;
+    padding: 16px;
+    gap: 16px;
+  }
+  .nav-top { margin-bottom: 8px; }
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -280px;
+    width: 260px;
+    height: 100vh;
+    background: var(--bg-page);
+    padding: 60px 16px 20px;
+    overflow-y: auto;
+    z-index: 1000;
+    transition: left 0.3s ease;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.1);
+    gap: 12px;
+  }
+  .sidebar.open { left: 0; }
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.3);
+    z-index: 999;
+  }
+  .sidebar-overlay.show { display: block; }
+  .sidebar-toggle { display: flex; align-items: center; justify-content: center; }
+  .main-content { min-width: 0; }
+  .post-box { padding: 20px; border-radius: 16px; }
+  .entry-card { padding: 20px; border-radius: 16px; }
+}
+</style>
+</head>
+<body>
+
+<div class="page-wrapper">
+  <div class="nav-top">
+    <a href="67zz.html">查看相册</a>
+    <a href="#" id="logoutBtn">退出</a>
+  </div>
+
+  <!-- 左侧侧边栏 -->
+  <aside class="sidebar" id="sidebar">
+    <!-- 迷你日历 -->
+    <div class="sidebar-card">
+      <h3>📅 月度日历</h3>
+      <div class="cal-nav">
+        <button id="calPrev">‹</button>
+        <span class="cal-month-label" id="calLabel"></span>
+        <button id="calNext">›</button>
+      </div>
+      <div class="cal-weekdays">
+        <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+      </div>
+      <div class="cal-days" id="calDays"></div>
+    </div>
+
+    <!-- 分类筛选 -->
+    <div class="sidebar-card">
+      <h3>📂 日记分类</h3>
+      <div class="filter-btns">
+        <button class="filter-btn active" data-filter="all">📋 全部日记 <span class="filter-count" id="countAll">0</span></button>
+        <button class="filter-btn" data-filter="daily">🌤 日常日记 <span class="filter-count" id="countDaily">0</span></button>
+        <button class="filter-btn" data-filter="travel">✈️ 旅游日记 <span class="filter-count" id="countTravel">0</span></button>
+      </div>
+    </div>
+
+    <!-- 本月统计 -->
+    <div class="sidebar-card">
+      <h3>📊 本月统计</h3>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="stat-num" id="statTotal">0</div>
+          <div class="stat-label">本月总篇数</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-num" id="statWithImg">0</div>
+          <div class="stat-label">带图日记</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- 右侧主内容区 -->
+  <div class="main-content">
+    <div class="post-box">
+      <textarea id="diaryText" placeholder="写下今天的日记..."></textarea>
+      <div class="mode-selector">
+        <label><input type="radio" name="diaryMode" value="daily" checked> 🌤 日常</label>
+        <label><input type="radio" name="diaryMode" value="travel"> ✈️ 旅游</label>
+      </div>
+      <div class="location-wrap" id="locationWrap">
+        <input type="text" id="locationInput" placeholder="填写地点，如：北京故宫" maxlength="50">
+      </div>
+      <div class="preview-area" id="previewArea"></div>
+      <div class="post-actions">
+        <label>
+          <span id="fileLabel">+ 添加图片</span>
+          <input type="file" id="imageInput" accept="image/*" multiple>
+        </label>
+        <button class="btn-post" id="btnPost">发布</button>
+      </div>
+    </div>
+    <div id="entries"></div>
+
+    <!-- 页脚 -->
+    <div class="page-footer">
+      <div class="footer-divider"></div>
+      <div class="footer-text">记录生活，温暖自己</div>
+      <div class="footer-text" style="margin-top:2px;">日子很长，每一页都值得慢慢翻</div>
+    </div>
+  </div>
+
+  <!-- 右侧3D相册 -->
+  <aside class="album-column" id="albumColumn">
+    <div class="album-card">
+      <h3>✨ 时光相册</h3>
+      <div id="albumContent"></div>
+    </div>
+  </aside>
+</div>
+
+<!-- 移动端侧边栏切换 -->
+<button class="sidebar-toggle" id="sidebarToggle">☰</button>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- 编辑模态框 -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal-box">
+    <div id="editTimeWrap" style="display:none;margin-bottom:12px;">
+      <label style="font-size:13px;color:#888;">🕐 修改时间</label>
+      <input type="datetime-local" id="editTimeInput" style="width:100%;border:1.5px solid rgba(0,0,0,0.08);border-radius:10px;padding:8px 12px;font-size:14px;font-family:inherit;outline:none;margin-top:6px;background:#fafbfc;transition:border-color 0.2s,box-shadow 0.2s;">
+    </div>
+    <textarea id="editText" placeholder="编辑日记内容..."></textarea>
+    <div class="edit-img-area" id="editImgArea"></div>
+    <div class="modal-actions" style="justify-content:space-between;">
+      <label class="edit-add-img" id="editAddImgLabel">+ 添加图片
+        <input type="file" id="editImgInput" accept="image/*" multiple>
+      </label>
+      <div style="display:flex;gap:10px;">
+        <button class="btn-cancel" id="btnCancelEdit">取消</button>
+        <button class="btn-save" id="btnSaveEdit">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 无日记提示弹窗 -->
+<div class="tip-overlay" id="noEntryModal">
+  <div class="tip-box">
+    <div class="tip-text">过去的这一天还没有记录哦~让我们珍惜现在的美好时光吧•͈ᴗ⁃͈ ✧</div>
+    <div class="tip-btns">
+      <button class="tip-btn tip-btn-close" id="btnCloseNoEntry">关闭</button>
+      <button class="tip-btn tip-btn-add" id="btnAddNoEntry">现在补上</button>
+    </div>
+  </div>
+</div>
+
+<!-- 未来日期提示弹窗 -->
+<div class="tip-overlay" id="futureModal">
+  <div class="tip-box">
+    <div class="tip-text">这么快就迫不及待的期待将要抵达的未来了么，虽然很期待，但是还不可以写哦~这是我们终将走进良夜，也是我们终将会抵达的不久的将来(˵>ㅿ<˵)♡(˵>ㅿ<˵)</div>
+    <div class="tip-btns">
+      <button class="tip-btn tip-btn-close" id="btnCloseFuture">知道啦</button>
+    </div>
+  </div>
+</div>
+
+<!-- 补日记弹窗 -->
+<div class="sup-overlay" id="supModal">
+  <div class="sup-box">
+    <div class="sup-title" id="supTitle">📝 补写日记</div>
+    <textarea id="supText" placeholder="写下那天的回忆..."></textarea>
+    <div class="sup-img-area" id="supImgArea"></div>
+    <div class="sup-actions">
+      <label>+ 添加图片
+        <input type="file" id="supImgInput" accept="image/*" multiple>
+      </label>
+      <div class="sup-btns">
+        <button class="btn-cancel" id="btnCancelSup">取消</button>
+        <button class="btn-save" id="btnSaveSup">发布</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 年月输入弹窗 -->
+<div class="ym-overlay" id="ymModal">
+  <div class="ym-box">
+    <div class="ym-title">📅 跳转到指定月份</div>
+    <input class="ym-input" id="ymInput" placeholder="2026年06月" maxlength="8">
+    <div class="ym-hint">请输入格式如：2026年06月</div>
+    <div class="ym-error" id="ymError"></div>
+    <div class="ym-actions">
+      <button class="btn-cancel" id="btnCancelYm">取消</button>
+      <button class="btn-save" id="btnConfirmYm">确认跳转</button>
+    </div>
+  </div>
+</div>
+
+<!-- 删除确认弹窗 -->
+<div class="del-overlay" id="delModal">
+  <div class="del-box">
+    <div class="del-text">确认要删除这一天的小回忆么，我也不确定能不能找回来哦- ̗̀ ෆ( ˶'ᵕ'˶)ෆ ̖́-~</div>
+    <div class="del-actions">
+      <button class="btn-del-cancel" id="btnDelCancel">取消</button>
+      <button class="btn-del-unsure" id="btnDelUnsure">不确定</button>
+      <button class="btn-del-confirm" id="btnDelConfirm">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 删除成功提示弹窗 -->
+<div class="success-overlay" id="successModal">
+  <div class="success-box">
+    <div class="success-icon">✨</div>
+    <div class="success-text">好啦，一切为了亲爱的，让我们充满诗意的向前向前៷>ᴗ<៷</div>
+  </div>
+</div>
+
+<script src="/js/common.js"></script>
+<script>
+// 检查登录状态
+fetch('/api/check-auth').then(r => r.json()).then(d => {
+  if (!d.authenticated) window.location.href = 'index.html';
+});
+
+// 退出登录
+document.getElementById('logoutBtn').addEventListener('click', async e => {
+  e.preventDefault();
+  await fetch('/api/logout', { method: 'POST' });
+  window.location.href = 'index.html';
+});
+
+// ========== 全局状态 ==========
+let allEntries = [];
+let currentFilter = 'all';
+let calendarYear, calendarMonth;
+let supTargetDate = null; // 补写日记的目标日期
+let editRemoveImages = []; // 编辑时要删除的图片
+let editNewFiles = [];     // 编辑时新增的图片
+let supFiles = [];         // 补写时的图片
+
+function initCalendarMonth() {
+  const now = new Date();
+  calendarYear = now.getFullYear();
+  calendarMonth = now.getMonth();
+}
+
+// ========== 日历渲染 ==========
+function updateCalendar() {
+  const label = document.getElementById('calLabel');
+  const container = document.getElementById('calDays');
+  label.textContent = calendarYear + '年' + (calendarMonth + 1) + '月';
+
+  // 构建当月有日记的日期集合
+  const entryDays = new Set();
+  allEntries.forEach(e => {
+    const d = new Date(e.createdAt);
+    if (d.getFullYear() === calendarYear && d.getMonth() === calendarMonth) {
+      entryDays.add(d.getDate());
+    }
+  });
+
+  const today = new Date();
+  const firstDay = new Date(calendarYear, calendarMonth, 1).getDay();
+  const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+  const daysInPrev = new Date(calendarYear, calendarMonth, 0).getDate();
+
+  let cells = '';
+  // 上月补位
+  for (let i = firstDay - 1; i >= 0; i--) {
+    const d = daysInPrev - i;
+    cells += '<div class="cal-day other-month">' + d + '</div>';
+  }
+  // 当月
+  for (let d = 1; d <= daysInMonth; d++) {
+    let cls = 'cal-day';
+    if (d === today.getDate() && calendarMonth === today.getMonth() && calendarYear === today.getFullYear()) {
+      cls += ' is-today';
+    }
+    if (entryDays.has(d)) cls += ' has-entry';
+    cells += '<div class="' + cls + '">' + d + '</div>';
+  }
+  // 下月补位（补满6行 = 42格）
+  const totalCells = firstDay + daysInMonth;
+  const remaining = totalCells > 35 ? 42 - totalCells : 35 - totalCells;
+  for (let d = 1; d <= remaining; d++) {
+    cells += '<div class="cal-day other-month">' + d + '</div>';
+  }
+  container.innerHTML = cells;
+}
+
+document.getElementById('calPrev').addEventListener('click', () => {
+  calendarMonth--;
+  if (calendarMonth < 0) { calendarMonth = 11; calendarYear--; }
+  updateCalendar();
+});
+document.getElementById('calNext').addEventListener('click', () => {
+  calendarMonth++;
+  if (calendarMonth > 11) { calendarMonth = 0; calendarYear++; }
+  updateCalendar();
+});
+
+// ========== 交互1：日历日期点击跳转 ==========
+document.getElementById('calDays').addEventListener('click', e => {
+  const dayEl = e.target.closest('.cal-day');
+  if (!dayEl || dayEl.classList.contains('other-month')) return;
+  const day = parseInt(dayEl.textContent, 10);
+  if (isNaN(day)) return;
+
+  // 判断是否为未来日期
+  const clickedDate = new Date(calendarYear, calendarMonth, day);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (clickedDate > today) {
+    document.getElementById('futureModal').style.display = 'flex';
+    return;
+  }
+
+  // 查找当天是否有日记
+  const matched = allEntries.filter(e => {
+    const d = new Date(e.createdAt);
+    return d.getFullYear() === calendarYear && d.getMonth() === calendarMonth && d.getDate() === day;
+  });
+
+  if (matched.length === 0) {
+    // 无日记 → 弹出提示，记录目标日期
+    supTargetDate = new Date(calendarYear, calendarMonth, day);
+    document.getElementById('noEntryModal').style.display = 'flex';
+    return;
+  }
+
+  // 有日记 → 切换到全部筛选、找到对应页码并滚动
+  currentFilter = 'all';
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.filter-btn[data-filter="all"]').classList.add('active');
+
+  const filtered = getFilteredEntries();
+  const idx = filtered.findIndex(e => matched.some(m => m.id === e.id));
+  if (idx === -1) return;
+  currentPage = Math.ceil((idx + 1) / pageSize);
+  renderEntries();
+
+  // 滚动到对应日记卡片
+  setTimeout(() => {
+    const cards = document.querySelectorAll('.entry-card');
+    const pageIdx = idx % pageSize;
+    if (cards[pageIdx]) {
+      cards[pageIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      cards[pageIdx].style.transition = 'box-shadow 0.3s ease';
+      cards[pageIdx].style.boxShadow = '0 0 0 3px rgba(102,126,234,0.3), 0 4px 24px rgba(0,0,0,0.07)';
+      setTimeout(() => { cards[pageIdx].style.boxShadow = ''; }, 2000);
+    }
+  }, 100);
+});
+
+// 关闭无日记提示弹窗
+document.getElementById('btnCloseNoEntry').addEventListener('click', () => {
+  document.getElementById('noEntryModal').style.display = 'none';
+  supTargetDate = null;
+});
+document.getElementById('noEntryModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('noEntryModal')) {
+    document.getElementById('noEntryModal').style.display = 'none';
+    supTargetDate = null;
+  }
+});
+
+// 关闭未来日期提示弹窗
+document.getElementById('btnCloseFuture').addEventListener('click', () => {
+  document.getElementById('futureModal').style.display = 'none';
+});
+document.getElementById('futureModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('futureModal')) {
+    document.getElementById('futureModal').style.display = 'none';
+  }
+});
+
+// 现在补上 → 打开补日记弹窗
+document.getElementById('btnAddNoEntry').addEventListener('click', () => {
+  document.getElementById('noEntryModal').style.display = 'none';
+  if (!supTargetDate) return;
+  const m = supTargetDate.getMonth() + 1;
+  const d = supTargetDate.getDate();
+  document.getElementById('supTitle').textContent = '📝 补写 ' + supTargetDate.getFullYear() + '年' + m + '月' + d + '日 的日记';
+  document.getElementById('supText').value = '';
+  supFiles = [];
+  renderSupPreview();
+  document.getElementById('supModal').style.display = 'flex';
+  setTimeout(() => document.getElementById('supText').focus(), 100);
+});
+
+// 补日记弹窗 - 图片上传
+document.getElementById('supImgInput').addEventListener('change', () => {
+  for (const f of document.getElementById('supImgInput').files) {
+    if (supFiles.length < 9) supFiles.push(f);
+  }
+  document.getElementById('supImgInput').value = '';
+  renderSupPreview();
+});
+
+function renderSupPreview() {
+  const area = document.getElementById('supImgArea');
+  area.innerHTML = '';
+  supFiles.forEach((file, i) => {
+    const thumb = document.createElement('div');
+    thumb.className = 'thumb';
+    const reader = new FileReader();
+    reader.onload = ev => {
+      thumb.innerHTML = '<img src="' + ev.target.result + '"><button class="rm" onclick="removeSupFile(' + i + ')">&times;</button>';
+    };
+    reader.readAsDataURL(file);
+    area.appendChild(thumb);
+  });
+}
+
+function removeSupFile(i) {
+  supFiles.splice(i, 1);
+  renderSupPreview();
+}
+
+// 补日记弹窗 - 取消
+document.getElementById('btnCancelSup').addEventListener('click', () => {
+  document.getElementById('supModal').style.display = 'none';
+  supTargetDate = null;
+  supFiles = [];
+});
+document.getElementById('supModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('supModal')) {
+    document.getElementById('supModal').style.display = 'none';
+    supTargetDate = null;
+    supFiles = [];
+  }
+});
+
+// 补日记弹窗 - 发布
+document.getElementById('btnSaveSup').addEventListener('click', async () => {
+  const text = document.getElementById('supText').value.trim();
+  if (!text && supFiles.length === 0) return alert('至少写点文字或添加图片哦~');
+  if (!supTargetDate) return;
+
+  const btn = document.getElementById('btnSaveSup');
+  btn.disabled = true;
+  btn.textContent = '发布中...';
+
+  const formData = new FormData();
+  formData.append('text', text);
+  formData.append('mode', 'daily');
+  formData.append('createdAt', supTargetDate.toISOString());
+  supFiles.forEach(f => formData.append('images', f));
+
+  try {
+    await apiFetch('/api/entries', { method: 'POST', body: formData });
+    document.getElementById('supModal').style.display = 'none';
+    supTargetDate = null;
+    supFiles = [];
+    loadEntries();
+  } catch (e) {
+    alert('发布失败: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '发布';
+  }
+});
+
+// ========== 交互2：年月输入跳转 ==========
+document.getElementById('calLabel').addEventListener('click', () => {
+  const ymInput = document.getElementById('ymInput');
+  const ymError = document.getElementById('ymError');
+  ymInput.value = calendarYear + '年' + String(calendarMonth + 1).padStart(2, '0') + '月';
+  ymError.textContent = '';
+  document.getElementById('ymModal').style.display = 'flex';
+  setTimeout(() => ymInput.focus(), 100);
+});
+
+document.getElementById('btnCancelYm').addEventListener('click', () => {
+  document.getElementById('ymModal').style.display = 'none';
+});
+document.getElementById('ymModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('ymModal')) {
+    document.getElementById('ymModal').style.display = 'none';
+  }
+});
+
+document.getElementById('btnConfirmYm').addEventListener('click', () => {
+  const val = document.getElementById('ymInput').value.trim();
+  const errEl = document.getElementById('ymError');
+  const match = val.match(/^(\d{4})年(\d{1,2})月$/);
+  if (!match) {
+    errEl.textContent = '格式不对哦~请输入如：2026年06月';
+    return;
+  }
+  const y = parseInt(match[1], 10);
+  const m = parseInt(match[2], 10);
+  if (m < 1 || m > 12) {
+    errEl.textContent = '月份要在1~12之间哦~';
+    return;
+  }
+  calendarYear = y;
+  calendarMonth = m - 1;
+  updateCalendar();
+  document.getElementById('ymModal').style.display = 'none';
+});
+
+// 回车确认
+document.getElementById('ymInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); document.getElementById('btnConfirmYm').click(); }
+});
+
+// ========== 统计更新 ==========
+function updateStats() {
+  const now = new Date();
+  const thisMonth = allEntries.filter(e => {
+    const d = new Date(e.createdAt);
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  });
+  const withImg = thisMonth.filter(e => (e.images && e.images.length) || e.image).length;
+  document.getElementById('statTotal').textContent = thisMonth.length;
+  document.getElementById('statWithImg').textContent = withImg;
+
+  // 更新分类计数
+  const dailyCount = allEntries.filter(e => e.mode !== 'travel').length;
+  const travelCount = allEntries.filter(e => e.mode === 'travel').length;
+  document.getElementById('countAll').textContent = allEntries.length;
+  document.getElementById('countDaily').textContent = dailyCount;
+  document.getElementById('countTravel').textContent = travelCount;
+}
+
+// ========== 分类筛选 ==========
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    currentPage = 1;
+    renderEntries();
+  });
+});
+
+function getFilteredEntries() {
+  if (currentFilter === 'daily') return allEntries.filter(e => e.mode !== 'travel');
+  if (currentFilter === 'travel') return allEntries.filter(e => e.mode === 'travel');
+  return allEntries;
+}
+
+// ========== 图片上传 ==========
+const imageInput = document.getElementById('imageInput');
+const previewArea = document.getElementById('previewArea');
+const fileLabel = document.getElementById('fileLabel');
+let selectedFiles = [];
+
+imageInput.addEventListener('change', () => {
+  for (const f of imageInput.files) {
+    if (selectedFiles.length < 9) selectedFiles.push(f);
+  }
+  imageInput.value = '';
+  renderPreview();
+});
+
+function renderPreview() {
+  previewArea.innerHTML = '';
+  selectedFiles.forEach((file, i) => {
+    const thumb = document.createElement('div');
+    thumb.className = 'thumb';
+    const reader = new FileReader();
+    reader.onload = e => {
+      thumb.innerHTML = '<img src="' + e.target.result + '"><button class="rm" onclick="removeFile(' + i + ')">&times;</button>';
+    };
+    reader.readAsDataURL(file);
+    previewArea.appendChild(thumb);
+  });
+  fileLabel.textContent = selectedFiles.length ? '+ 添加图片(' + selectedFiles.length + '/9)' : '+ 添加图片';
+}
+
+function removeFile(i) {
+  selectedFiles.splice(i, 1);
+  renderPreview();
+}
+
+// ========== 模式选择 ==========
+const modeRadios = document.querySelectorAll('input[name="diaryMode"]');
+const locationWrap = document.getElementById('locationWrap');
+modeRadios.forEach(r => r.addEventListener('change', () => {
+  locationWrap.classList.toggle('show', r.value === 'travel' && r.checked);
+}));
+
+// ========== 发布日记 ==========
+document.getElementById('btnPost').addEventListener('click', postEntry);
+document.getElementById('diaryText').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); postEntry(); }
+});
+
+async function postEntry() {
+  const text = document.getElementById('diaryText').value.trim();
+  if (!text && selectedFiles.length === 0) return alert('至少写点文字或添加图片哦~');
+
+  const mode = document.querySelector('input[name="diaryMode"]:checked').value;
+  const location = document.getElementById('locationInput').value.trim();
+  if (mode === 'travel' && !location) return alert('旅游模式请填写地点哦~');
+
+  const btn = document.getElementById('btnPost');
+  btn.disabled = true;
+  btn.textContent = '发布中...';
+
+  const formData = new FormData();
+  formData.append('text', text);
+  formData.append('mode', mode);
+  if (mode === 'travel') formData.append('location', location);
+  selectedFiles.forEach(f => formData.append('images', f));
+
+  try {
+    await apiFetch('/api/entries', { method: 'POST', body: formData });
+    document.getElementById('diaryText').value = '';
+    document.getElementById('locationInput').value = '';
+    document.querySelector('input[name="diaryMode"][value="daily"]').checked = true;
+    locationWrap.classList.remove('show');
+    selectedFiles = [];
+    renderPreview();
+    loadEntries();
+  } catch (e) {
+    alert('发布失败: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '发布';
+  }
+}
+
+// ========== 编辑日记 ==========
+let editingId = null;
+const editModal = document.getElementById('editModal');
+const editText = document.getElementById('editText');
+
+function renderEditImages() {
+  const area = document.getElementById('editImgArea');
+  const entry = allEntries.find(e => e.id === editingId);
+  if (!entry) { area.innerHTML = ''; return; }
+  const imgs = entry.images || (entry.image ? [entry.image] : []);
+  const thumbs = entry.thumbImages || imgs;
+  let html = '';
+  imgs.forEach((img, i) => {
+    if (editRemoveImages.includes(img)) return;
+    html += '<div class="thumb"><img src="/uploads/' + (thumbs[i] || img) + '">'
+      + '<button class="rm" onclick="removeEditImg(\'' + img + '\')">&times;</button></div>';
+  });
+  // 新增的图片
+  editNewFiles.forEach((file, i) => {
+    html += '<div class="thumb" id="editNewThumb' + i + '"><img src="">'
+      + '<button class="rm" onclick="removeEditNewFile(' + i + ')">&times;</button></div>';
+  });
+  area.innerHTML = html;
+  // 加载新文件预览
+  editNewFiles.forEach((file, i) => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const el = document.getElementById('editNewThumb' + i);
+      if (el) el.querySelector('img').src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function removeEditImg(imgName) {
+  editRemoveImages.push(imgName);
+  renderEditImages();
+}
+
+function removeEditNewFile(i) {
+  editNewFiles.splice(i, 1);
+  renderEditImages();
+}
+
+document.getElementById('editImgInput').addEventListener('change', () => {
+  for (const f of document.getElementById('editImgInput').files) {
+    const entry = allEntries.find(e => e.id === editingId);
+    const existCount = entry ? (entry.images || []).filter(img => !editRemoveImages.includes(img)).length : 0;
+    if (existCount + editNewFiles.length < 9) editNewFiles.push(f);
+  }
+  document.getElementById('editImgInput').value = '';
+  renderEditImages();
+});
+
+document.getElementById('btnCancelEdit').addEventListener('click', () => {
+  editModal.style.display = 'none';
+  editingId = null;
+  editRemoveImages = [];
+  editNewFiles = [];
+});
+
+document.getElementById('btnSaveEdit').addEventListener('click', async () => {
+  if (!editingId) return;
+  const btn = document.getElementById('btnSaveEdit');
+  btn.disabled = true;
+  btn.textContent = '保存中...';
+
+  // 获取时间（仅旅游日记）
+  const timeInput = document.getElementById('editTimeInput');
+  const timeWrap = document.getElementById('editTimeWrap');
+  let createdAt = undefined;
+  if (timeWrap.style.display !== 'none' && timeInput.value) {
+    createdAt = new Date(timeInput.value).toISOString();
+  }
+
+  try {
+    const hasNewImages = editNewFiles.length > 0;
+    const hasRemoveImages = editRemoveImages.length > 0;
+
+    if (hasNewImages || hasRemoveImages) {
+      const formData = new FormData();
+      formData.append('text', editText.value);
+      if (createdAt) formData.append('createdAt', createdAt);
+      if (hasRemoveImages) formData.append('removeImages', JSON.stringify(editRemoveImages));
+      editNewFiles.forEach(f => formData.append('images', f));
+      await apiFetch('/api/entries/' + editingId, { method: 'PUT', body: formData });
+    } else {
+      const body = { text: editText.value };
+      if (createdAt) body.createdAt = createdAt;
+      await apiFetch('/api/entries/' + editingId, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+    }
+    editModal.style.display = 'none';
+    editingId = null;
+    editRemoveImages = [];
+    editNewFiles = [];
+    loadEntries();
+  } catch (e) {
+    alert('保存失败: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '保存';
+  }
+});
+
+editModal.addEventListener('click', e => {
+  if (e.target === editModal) {
+    editModal.style.display = 'none';
+    editingId = null;
+    editRemoveImages = [];
+    editNewFiles = [];
+  }
+});
+
+function toLocalDatetime(iso) {
+  const d = new Date(iso);
+  const pad = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())
+    + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+
+function startEdit(id, currentText) {
+  editingId = id;
+  editRemoveImages = [];
+  editNewFiles = [];
+  editText.value = currentText || '';
+
+  // 旅游日记显示时间修改
+  const entry = allEntries.find(e => e.id === id);
+  const timeWrap = document.getElementById('editTimeWrap');
+  const timeInput = document.getElementById('editTimeInput');
+  if (entry && entry.mode === 'travel') {
+    timeWrap.style.display = 'block';
+    timeInput.value = toLocalDatetime(entry.createdAt);
+  } else {
+    timeWrap.style.display = 'none';
+    timeInput.value = '';
+  }
+
+  renderEditImages();
+  editModal.style.display = 'flex';
+  editText.focus();
+}
+
+// ========== 加载日记 ==========
+let currentPage = 1;
+const pageSize = 10;
+
+async function loadEntries() {
+  try {
+    // 加载全部日记用于日历、统计、筛选
+    const data = await apiFetch('/api/entries?limit=9999');
+    allEntries = data.entries || data;
+    updateStats();
+    updateCalendar();
+    renderEntries();
+    renderAlbum();
+  } catch (e) {
+    console.error('Load error:', e);
+  }
+}
+
+function renderEntries() {
+  const container = document.getElementById('entries');
+  const filtered = getFilteredEntries();
+
+  if (!filtered.length) {
+    const msg = currentFilter === 'travel' ? '还没有旅游日记哦~' :
+                currentFilter === 'daily' ? '还没有日常日记哦~' :
+                '还没有日记，写下你的第一篇吧~';
+    container.innerHTML = '<div class="empty-msg">' + msg + '</div>';
+    return;
+  }
+
+  // 客户端分页
+  const totalPages = Math.ceil(filtered.length / pageSize);
+  if (currentPage > totalPages) currentPage = totalPages;
+  const start = (currentPage - 1) * pageSize;
+  const pageEntries = filtered.slice(start, start + pageSize);
+
+  let html = pageEntries.map(e => {
+    const imgs = e.images || (e.image ? [e.image] : []);
+    const thumbs = e.thumbImages || imgs;
+    return '<div class="entry-card">'
+      + '<button class="btn-del" onclick="delEntry(\'' + e.id + '\')" title="删除">&times;</button>'
+      + '<div class="time">' + formatTime(e.createdAt) + '</div>'
+      + (e.mode === 'travel' && e.location ? '<div class="location-tag">📍 ' + escHtml(e.location) + '</div>' : '')
+      + (e.text ? '<div class="text">' + escHtml(e.text) + '</div>' : '')
+      + (imgs.length ? '<div class="img-grid">' + imgs.map((img, i) =>
+          '<img src="/uploads/' + (thumbs[i] || img) + '" onclick="showLightbox(\'/uploads/' + img + '\')">'
+        ).join('') + '</div>' : '')
+      + '<div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;">'
+      + '<a href="detail.html?id=' + e.id + '" class="poster-link">🖼 海报</a>'
+      + '<a href="#" class="edit-link" onclick="event.preventDefault();startEdit(\'' + e.id + '\',\'' + escHtml(e.text || '').replace(/'/g, "\\'") + '\')">编辑</a>'
+      + '</div></div>';
+  }).join('');
+
+  // 分页控件
+  if (totalPages > 1) {
+    html += '<div style="text-align:center;padding:20px 0;">';
+    if (currentPage > 1) {
+      html += '<button class="page-btn" onclick="goPage(' + (currentPage - 1) + ')">上一页</button>';
+    }
+    html += '<span style="color:rgba(0,0,0,0.3);font-size:13px;margin:0 10px;">' + currentPage + ' / ' + totalPages + '</span>';
+    if (currentPage < totalPages) {
+      html += '<button class="page-btn" onclick="goPage(' + (currentPage + 1) + ')">下一页</button>';
+    }
+    html += '</div>';
+  }
+
+  container.innerHTML = html;
+}
+
+function goPage(page) {
+  currentPage = page;
+  renderEntries();
+  // 滚动到日记区顶部
+  document.getElementById('entries').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ========== 交互3：删除日记双层弹窗 ==========
+let deletingId = null;
+
+function delEntry(id) {
+  deletingId = id;
+  document.getElementById('delModal').style.display = 'flex';
+}
+
+document.getElementById('btnDelCancel').addEventListener('click', () => {
+  document.getElementById('delModal').style.display = 'none';
+  deletingId = null;
+});
+document.getElementById('btnDelUnsure').addEventListener('click', () => {
+  document.getElementById('delModal').style.display = 'none';
+  deletingId = null;
+});
+document.getElementById('delModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('delModal')) {
+    document.getElementById('delModal').style.display = 'none';
+    deletingId = null;
+  }
+});
+
+document.getElementById('btnDelConfirm').addEventListener('click', async () => {
+  if (!deletingId) return;
+  const id = deletingId;
+  document.getElementById('delModal').style.display = 'none';
+  deletingId = null;
+  try {
+    await apiFetch('/api/entries/' + id, { method: 'DELETE' });
+    loadEntries();
+    // 弹出成功提示
+    document.getElementById('successModal').style.display = 'flex';
+  } catch (e) {
+    alert('删除失败: ' + e.message);
+  }
+});
+
+// 成功提示弹窗 - 点击任意位置关闭
+document.getElementById('successModal').addEventListener('click', () => {
+  document.getElementById('successModal').style.display = 'none';
+});
+
+// ========== 移动端侧边栏 ==========
+document.getElementById('sidebarToggle').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('show');
+});
+document.getElementById('sidebarOverlay').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('show');
+});
+
+// ========== 初始化 ==========
+initCalendarMonth();
+loadEntries();
+
+// SSE 实时更新
+if (typeof EventSource !== 'undefined') {
+  const evtSource = new EventSource('/api/entries/stream');
+  evtSource.onmessage = () => loadEntries();
+  evtSource.onerror = () => {
+    console.warn('SSE 连接断开，将在 5 秒后重连...');
+    evtSource.close();
+    setTimeout(() => { window.location.reload(); }, 5000);
+  };
+} else {
+  setInterval(loadEntries, 30000);
+}
+
+// 切换标签页时刷新
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) loadEntries();
+});
+
+// ========== 3D 立体相册 ==========
+let albumImages = [];      // [{thumb, orig}] 全部图片
+let albumGroups = [];      // [[img,img,...], ...] 每组最多6张
+let albumGroupIdx = 0;     // 当前显示的组索引
+let albumTimer = null;     // 自动轮播定时器
+
+function collectAlbumImages() {
+  const imgs = [];
+  allEntries.forEach(entry => {
+    const names = entry.images || (entry.image ? [entry.image] : []);
+    const thumbs = entry.thumbImages || names;
+    names.forEach((img, i) => {
+      imgs.push({ thumb: '/uploads/' + (thumbs[i] || img), orig: '/uploads/' + img });
+    });
+  });
+  albumImages = imgs;
+  // 分组：每组6张
+  albumGroups = [];
+  for (let i = 0; i < imgs.length; i += 6) {
+    albumGroups.push(imgs.slice(i, i + 6));
+  }
+}
+
+function renderAlbum() {
+  collectAlbumImages();
+  const container = document.getElementById('albumContent');
+
+  if (albumImages.length === 0) {
+    container.innerHTML = '<div class="album-empty">还没有照片哦~</div>';
+    return;
+  }
+
+  albumGroupIdx = 0;
+  container.innerHTML =
+    '<div class="cube-stage"><div class="cube-wrap" id="cubeWrap"></div></div>'
+    + '<div class="cube-shadow"></div>'
+    + '<div class="album-dots" id="albumDots"></div>'
+    + '<div class="album-info" id="albumInfo"></div>';
+
+  renderCubeFaces();
+  renderDots();
+  startAlbumAuto();
+}
+
+function renderCubeFaces() {
+  const wrap = document.getElementById('cubeWrap');
+  if (!wrap) return;
+  const group = albumGroups[albumGroupIdx] || [];
+  let html = '';
+  for (let i = 0; i < 6; i++) {
+    if (i < group.length) {
+      html += '<div class="cube-face" data-orig="' + group[i].orig + '">'
+        + '<img src="' + group[i].thumb + '" loading="lazy"></div>';
+    } else {
+      // 空面
+      html += '<div class="cube-face" style="background:linear-gradient(135deg,#f0f4ff,#f5f0ff);"></div>';
+    }
+  }
+  wrap.innerHTML = html;
+
+  // 点击面 → 预览原图
+  wrap.querySelectorAll('.cube-face[data-orig]').forEach(face => {
+    face.addEventListener('click', () => {
+      showLightbox(face.dataset.orig);
+    });
+  });
+
+  // 更新信息
+  const info = document.getElementById('albumInfo');
+  if (info) {
+    const total = albumGroups.length;
+    info.textContent = '第 ' + (albumGroupIdx + 1) + ' / ' + total + ' 组 · 共 ' + albumImages.length + ' 张';
+  }
+}
+
+function renderDots() {
+  const dotsEl = document.getElementById('albumDots');
+  if (!dotsEl) return;
+  let html = '';
+  albumGroups.forEach((_, i) => {
+    html += '<div class="album-dot' + (i === albumGroupIdx ? ' active' : '') + '" data-idx="' + i + '"></div>';
+  });
+  dotsEl.innerHTML = html;
+  dotsEl.querySelectorAll('.album-dot').forEach(dot => {
+    dot.addEventListener('click', () => {
+      albumGroupIdx = parseInt(dot.dataset.idx, 10);
+      renderCubeFaces();
+      renderDots();
+    });
+  });
+}
+
+function startAlbumAuto() {
+  stopAlbumAuto();
+  if (albumGroups.length <= 1) return;
+  albumTimer = setInterval(() => {
+    albumGroupIdx = (albumGroupIdx + 1) % albumGroups.length;
+    renderCubeFaces();
+    renderDots();
+  }, 18000); // 每组转一圈(18s)后切换
+}
+
+function stopAlbumAuto() {
+  if (albumTimer) { clearInterval(albumTimer); albumTimer = null; }
+}
+</script>
+</body>
+</html>
